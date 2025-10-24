@@ -1,12 +1,72 @@
 #include "snake/snake.h"
 
+SnakeG::SnakeG() : Game() {
+        next_offs = {GRID_SIZE, 0};
+        for (int i = 0;  i < 3; i++) {
+            SnakePart *part = &snake.emplace_back();
+            part->rect = {(float)(GRID_SIZE * (5 - i)) + 1,(float)(GRID_SIZE * 5) + 1,(float)(GRID_SIZE - 2), (float)(GRID_SIZE - 2)};
+            part->offs = {0, 0};
+        }
+        create_random_prey();
+}
+
+void SnakeG::create_random_prey() {
+    int x = 0;
+    int y = 0;
+    bool regen = true;
+    while (regen) {
+        regen = false;
+        x = SDL_rand(GRID_COLS);
+        y = SDL_rand(GRID_ROWS);
+        for (const SnakePart &part : snake) {
+            regen |= part.rect.x / GRID_SIZE == x || part.rect.y / GRID_SIZE == y;
+        }
+    }
+    prey = {(float)(GRID_SIZE * x) + 5, (float)(GRID_SIZE * y) + 5, (float)(GRID_SIZE - 10), (float)(GRID_SIZE - 10)};
+}
+
 void SnakeG::update() {
-    if (snake.empty()) {
-        SDL_FRect *rect = &snake.emplace_back();
-        rect->x = 25;
-        rect->y = 25;
-        rect->w = 25;
-        rect->h = 25;
+    controller();
+    move();
+}
+
+void SnakeG::controller() {
+    const bool *keystate = SDL_GetKeyboardState(nullptr);
+    if (keystate[SDL_SCANCODE_UP] && next_offs.y <= 0) {
+        next_offs = {0, -GRID_SIZE};
+    } else if (keystate[SDL_SCANCODE_DOWN] && next_offs.y >= 0) {
+        next_offs = {0, GRID_SIZE};
+    } else if (keystate[SDL_SCANCODE_LEFT] && next_offs.x <= 0) {
+        next_offs = {-GRID_SIZE, 0};
+    } else if (keystate[SDL_SCANCODE_RIGHT] && next_offs.x >= 0) {
+        next_offs = {GRID_SIZE, 0};
+    }
+
+    if (snake[0].offs.x != 0 || snake[0].offs.y != 0) 
+        return;
+
+    snake[0].offs = next_offs;
+    for (int i = 1; i < snake.size(); i++) {
+        snake[i].offs.x = snake[i - 1].rect.x - snake[i].rect.x; 
+        snake[i].offs.y = snake[i - 1].rect.y - snake[i].rect.y; 
+    }
+}
+
+void SnakeG::move() {
+    for (int i = 0; i < snake.size(); i++) {
+        if (snake[i].offs.x > 0) {
+            snake[i].rect.x += 1;
+            snake[i].offs.x = snake[i].offs.x - 1 < 0 ? 0 : snake[i].offs.x - 1;
+        } else if (snake[i].offs.x < 0) {
+            snake[i].rect.x -= 1;
+            snake[i].offs.x = snake[i].offs.x + 1 > 0 ? 0 : snake[i].offs.x + 1;
+        } else if (snake[i].offs.y > 0) {
+            snake[i].rect.y += 1;
+            snake[i].offs.y = snake[i].offs.y - 1 < 0 ? 0 : snake[i].offs.y - 1;
+        } else if (snake[i].offs.y < 0) {
+            snake[i].rect.y -= 1;
+            snake[i].offs.y = snake[i].offs.y + 1 > 0 ? 0 : snake[i].offs.y + 1;
+        }
     }
 }
 
@@ -20,11 +80,11 @@ void show_grid(SDL_Renderer *renderer) {
                                 ColorRGB::WHITE.b,
                                 ColorRGB::WHITE.a);
     
-    for (int r = 1; r < wind_h / 25; r++) {
-        SDL_RenderLine(renderer, 0, r * 25.f, (float) wind_w, r * 25.f);
+    for (int r = 1; r < wind_h / GRID_SIZE; r++) {
+        SDL_RenderLine(renderer, 0, r * (float) GRID_SIZE, (float) wind_w, r * (float) GRID_SIZE);
     }
-    for (int q = 1; q < wind_w / 25; q++) {
-        SDL_RenderLine(renderer, q * 25.f, 0, q * 25.f, (float)wind_h);
+    for (int q = 1; q < wind_w / GRID_SIZE; q++) {
+        SDL_RenderLine(renderer, q * (float) GRID_SIZE, 0, q * (float) GRID_SIZE, (float)wind_h);
     }
 }
 
@@ -42,6 +102,16 @@ void SnakeG::render(SDL_Renderer *renderer) {
                                 ColorRGB::RED.g,
                                 ColorRGB::RED.b,
                                 ColorRGB::RED.a);
-    SDL_RenderFillRect(renderer, &snake.at(0));
+    for (const SnakePart &part : snake) {
+        SDL_RenderFillRect(renderer, &part.rect);
+    }
+
+    SDL_SetRenderDrawColorFloat(renderer,
+                                ColorRGB::GREEN.r,
+                                ColorRGB::GREEN.g,
+                                ColorRGB::GREEN.b,
+                                ColorRGB::GREEN.a);
+
+    SDL_RenderFillRect(renderer, &prey);
     SDL_RenderPresent(renderer);
 }

@@ -24,19 +24,20 @@ int main(int args, char *arc[]) {
     int         game = MiniGame::NO_GAME;
     Application app;
     show_entry();
-    while (game) {
+    // while (game) {
         usr_input = "";
         std::cout << "Enter game: ";
         std::getline(std::cin >> std::ws, usr_input);
         if (!get_game_from_input(to_lower_string(usr_input), game))
-            continue;
+            return EXIT_FAILURE;
+            // continue;
 
         if (!app.was_app_init() && !app.init())
             return EXIT_FAILURE;
 
         app.start((MiniGame)game);
-        show_entry();
-    }
+        // show_entry();
+    // }
 
     app.close();
     return EXIT_SUCCESS;

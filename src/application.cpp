@@ -8,7 +8,7 @@ Application::Application() {
 }
 
 bool Application::init() {
-    if (!(window = SDL_CreateWindow("MiniGame", 800, 600, SDL_WINDOW_HIDDEN))) {
+    if (!(window = SDL_CreateWindow("MiniGame", GRID_SIZE * GRID_COLS, GRID_SIZE * GRID_ROWS, SDL_WINDOW_HIDDEN))) {
         SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to create window\nError: ", SDL_GetError());
         return false;
     } else if (!(renderer = SDL_CreateRenderer(window, nullptr))) {

@@ -41,4 +41,8 @@ namespace ColorRGB {
     const SDL_FColor BLUE   = {0, 0, 1, 1};
 };
 
+const int GRID_SIZE{25};
+const int GRID_COLS{32};
+const int GRID_ROWS{24};
+
 #endif
