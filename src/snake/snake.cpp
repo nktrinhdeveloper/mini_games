@@ -42,6 +42,9 @@ void SnakeG::controller() {
         next_offs = {GRID_SIZE, 0};
     }
 
+    if ((SDL_fabsf(snake[0].offs.x) == 1 || SDL_fabsf(snake[0].offs.y) == 1) && change_direction())
+        corners.emplace_back(SDL_FRect{snake[0].rect.x + snake[0].offs.x, snake[0].rect.y + snake[0].offs.y, snake[0].rect.w, snake[0].rect.h});
+
     if (snake[0].offs.x != 0 || snake[0].offs.y != 0) 
         return;
 
@@ -50,6 +53,10 @@ void SnakeG::controller() {
         snake[i].offs.x = snake[i - 1].rect.x - snake[i].rect.x; 
         snake[i].offs.y = snake[i - 1].rect.y - snake[i].rect.y; 
     }
+}
+
+bool SnakeG::change_direction() {
+    return (snake[0].offs.x != 0 && next_offs.y != 0) || (snake[0].offs.y != 0 && next_offs.x != 0); 
 }
 
 void SnakeG::move() {
@@ -67,6 +74,10 @@ void SnakeG::move() {
             snake[i].rect.y -= 1;
             snake[i].offs.y = snake[i].offs.y + 1 > 0 ? 0 : snake[i].offs.y + 1;
         }
+    }
+
+    if (!corners.empty() && snake[snake.size() - 1].rect.x == corners[0].x && snake[snake.size() - 1].rect.y == corners[0].y) {
+        corners.erase(corners.begin());
     }
 }
 
@@ -89,29 +100,21 @@ void show_grid(SDL_Renderer *renderer) {
 }
 
 void SnakeG::render(SDL_Renderer *renderer) {
-    SDL_SetRenderDrawColorFloat(renderer,
-                                ColorRGB::BLACK.r,
-                                ColorRGB::BLACK.g,
-                                ColorRGB::BLACK.b,
-                                ColorRGB::BLACK.a);
+    SDL_SetRenderDrawColorFloat(renderer, ColorRGB::BLACK.r, ColorRGB::BLACK.g, ColorRGB::BLACK.b, ColorRGB::BLACK.a);
     SDL_RenderClear(renderer);
 
     show_grid(renderer);
-    SDL_SetRenderDrawColorFloat(renderer,
-                                ColorRGB::RED.r,
-                                ColorRGB::RED.g,
-                                ColorRGB::RED.b,
-                                ColorRGB::RED.a);
+    SDL_SetRenderDrawColorFloat(renderer, ColorRGB::RED.r, ColorRGB::RED.g, ColorRGB::RED.b, ColorRGB::RED.a);
     for (const SnakePart &part : snake) {
         SDL_RenderFillRect(renderer, &part.rect);
     }
 
-    SDL_SetRenderDrawColorFloat(renderer,
-                                ColorRGB::GREEN.r,
-                                ColorRGB::GREEN.g,
-                                ColorRGB::GREEN.b,
-                                ColorRGB::GREEN.a);
+    for (const SDL_FRect &rect : corners) {
+        SDL_RenderFillRect(renderer, &rect);
+    }
 
+    SDL_SetRenderDrawColorFloat(renderer, ColorRGB::GREEN.r, ColorRGB::GREEN.g, ColorRGB::GREEN.b, ColorRGB::GREEN.a);
     SDL_RenderFillRect(renderer, &prey);
+
     SDL_RenderPresent(renderer);
 }

@@ -11,12 +11,14 @@ typedef struct SnakePart {
 class SnakeG : public Game{
     private:
         std::vector<SnakePart>  snake;
+        std::vector<SDL_FRect>  corners;
         SDL_FRect   prey;
         SDL_FPoint  next_offs;
 
         void controller();
         void move();
         void create_random_prey();
+        bool change_direction();
     public:
         SnakeG();
         ~SnakeG() override = default;
