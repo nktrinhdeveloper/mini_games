@@ -10,8 +10,11 @@ typedef struct SnakePart {
 
 class SnakeG : public Game{
     private:
+        const int SNAKEPART_SIZE{GRID_SIZE - 2};
+        const float SPEED{1};
         std::vector<SnakePart>  snake;
         std::vector<SDL_FRect>  corners;
+        SDL_FPoint  corner;
         SDL_FRect   prey;
         SDL_FPoint  next_offs;
 

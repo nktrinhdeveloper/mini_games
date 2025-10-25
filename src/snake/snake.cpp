@@ -2,9 +2,14 @@
 
 SnakeG::SnakeG() : Game() {
         next_offs = {GRID_SIZE, 0};
-        for (int i = 0;  i < 3; i++) {
-            SnakePart *part = &snake.emplace_back();
-            part->rect = {(float)(GRID_SIZE * (5 - i)) + 1,(float)(GRID_SIZE * 5) + 1,(float)(GRID_SIZE - 2), (float)(GRID_SIZE - 2)};
+        corner = {0, 0};
+        snake.resize(3);
+        SnakePart *head = &snake.at(0);
+        head->rect = {(float)(GRID_SIZE * 5) + 1,(float)(GRID_SIZE * 5) + 1,(float)SNAKEPART_SIZE, (float)SNAKEPART_SIZE};
+        head->offs = {0, 0};
+        for (int i = 1;  i < 3; i++) {
+            SnakePart *part = &snake.at(i);
+            part->rect = {head->rect.x - (SNAKEPART_SIZE * i), head->rect.y ,(float)SNAKEPART_SIZE, (float)SNAKEPART_SIZE};
             part->offs = {0, 0};
         }
         create_random_prey();
@@ -18,11 +23,13 @@ void SnakeG::create_random_prey() {
         regen = false;
         x = SDL_rand(GRID_COLS);
         y = SDL_rand(GRID_ROWS);
+        prey = {(float)(GRID_SIZE * x) + 5, (float)(GRID_SIZE * y) + 5, (float)(GRID_SIZE - 10), (float)(GRID_SIZE - 10)};
         for (const SnakePart &part : snake) {
-            regen |= part.rect.x / GRID_SIZE == x || part.rect.y / GRID_SIZE == y;
+            regen = SDL_HasRectIntersectionFloat(&prey, &part.rect);
+            if (regen)
+                break;
         }
     }
-    prey = {(float)(GRID_SIZE * x) + 5, (float)(GRID_SIZE * y) + 5, (float)(GRID_SIZE - 10), (float)(GRID_SIZE - 10)};
 }
 
 void SnakeG::update() {
@@ -42,17 +49,15 @@ void SnakeG::controller() {
         next_offs = {GRID_SIZE, 0};
     }
 
-    if ((SDL_fabsf(snake[0].offs.x) == 1 || SDL_fabsf(snake[0].offs.y) == 1) && change_direction())
+    if ((SDL_fabsf(snake[0].offs.x) == 1 || SDL_fabsf(snake[0].offs.y) == 1) && change_direction()) {
         corners.emplace_back(SDL_FRect{snake[0].rect.x + snake[0].offs.x, snake[0].rect.y + snake[0].offs.y, snake[0].rect.w, snake[0].rect.h});
+        corner = SDL_FPoint{snake[0].rect.x + snake[0].offs.x, snake[0].rect.y + snake[0].offs.y};
+    }
 
     if (snake[0].offs.x != 0 || snake[0].offs.y != 0) 
         return;
 
     snake[0].offs = next_offs;
-    for (int i = 1; i < snake.size(); i++) {
-        snake[i].offs.x = snake[i - 1].rect.x - snake[i].rect.x; 
-        snake[i].offs.y = snake[i - 1].rect.y - snake[i].rect.y; 
-    }
 }
 
 bool SnakeG::change_direction() {
@@ -60,19 +65,30 @@ bool SnakeG::change_direction() {
 }
 
 void SnakeG::move() {
+    if (snake[1].offs.x == 0 && snake[1].offs.y == 0) {
+        for (int i = 1; i < snake.size(); i++) {
+            if (corner.x && corner.y && i == 1) {
+                snake[i].offs.x = corner.x - snake[i].rect.x;
+                snake[i].offs.y = corner.y - snake[i].rect.y;
+                corner = {0, 0};
+                continue;
+            }
+            
+            snake[i].offs.x = snake[i - 1].rect.x - snake[i].rect.x;
+            snake[i].offs.y = snake[i - 1].rect.y - snake[i].rect.y; 
+        }
+    }
+
+    float k = 0;
     for (int i = 0; i < snake.size(); i++) {
-        if (snake[i].offs.x > 0) {
-            snake[i].rect.x += 1;
-            snake[i].offs.x = snake[i].offs.x - 1 < 0 ? 0 : snake[i].offs.x - 1;
-        } else if (snake[i].offs.x < 0) {
-            snake[i].rect.x -= 1;
-            snake[i].offs.x = snake[i].offs.x + 1 > 0 ? 0 : snake[i].offs.x + 1;
-        } else if (snake[i].offs.y > 0) {
-            snake[i].rect.y += 1;
-            snake[i].offs.y = snake[i].offs.y - 1 < 0 ? 0 : snake[i].offs.y - 1;
-        } else if (snake[i].offs.y < 0) {
-            snake[i].rect.y -= 1;
-            snake[i].offs.y = snake[i].offs.y + 1 > 0 ? 0 : snake[i].offs.y + 1;
+        if (snake[i].offs.x != 0) {
+            k = snake[i].offs.x / SDL_abs(snake[i].offs.x);
+            snake[i].rect.x += k * SPEED;
+            snake[i].offs.x = k * (snake[i].offs.x - (k * SPEED)) < 0 ? 0 : snake[i].offs.x - (k * SPEED);
+        } else if (snake[i].offs.y != 0) {
+            k = snake[i].offs.y / SDL_abs(snake[i].offs.y);
+            snake[i].rect.y += k * SPEED;
+            snake[i].offs.y = k * (snake[i].offs.y - (k * SPEED)) < 0 ? 0 : snake[i].offs.y - (k * SPEED);
         }
     }
 
@@ -103,7 +119,7 @@ void SnakeG::render(SDL_Renderer *renderer) {
     SDL_SetRenderDrawColorFloat(renderer, ColorRGB::BLACK.r, ColorRGB::BLACK.g, ColorRGB::BLACK.b, ColorRGB::BLACK.a);
     SDL_RenderClear(renderer);
 
-    show_grid(renderer);
+    // show_grid(renderer);
     SDL_SetRenderDrawColorFloat(renderer, ColorRGB::RED.r, ColorRGB::RED.g, ColorRGB::RED.b, ColorRGB::RED.a);
     for (const SnakePart &part : snake) {
         SDL_RenderFillRect(renderer, &part.rect);
