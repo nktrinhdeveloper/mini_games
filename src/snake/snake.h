@@ -10,18 +10,20 @@ typedef struct SnakePart {
 
 class SnakeG : public Game{
     private:
-        const int SNAKEPART_SIZE{GRID_SIZE - 2};
-        const float SPEED{1};
-        std::vector<SnakePart>  snake;
-        std::vector<SDL_FRect>  corners;
+        const float SPEED{1.f};
+        std::vector<SDL_FRect>  snake;
+        SDL_Point   direction;
         SDL_FPoint  corner;
         SDL_FRect   prey;
-        SDL_FPoint  next_offs;
+        bool        alive;
 
+        std::vector<SDL_FRect> get_snake_render_rect() const;
         void controller();
         void move();
         void create_random_prey();
-        bool change_direction();
+        void change_direction();
+        int  check_collision(const bool &horz, const bool &pos);
+        void add_tail();
     public:
         SnakeG();
         ~SnakeG() override = default;
