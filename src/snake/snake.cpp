@@ -2,6 +2,7 @@
 
 SnakeG::SnakeG() : Game() {
     direction = {1, 0};
+    next_direction = direction;
     snake.resize(2);
     snake.at(0) = {(float)(5 * GRID_SIZE) + 1, (float)(5 * GRID_SIZE) + 1, (float)GRID_SIZE - 1, (float)GRID_SIZE - 1};
     snake.at(1) = {(float)(3 * GRID_SIZE) + 1, (float)(5 * GRID_SIZE) + 1, (float)GRID_SIZE - 1, (float)GRID_SIZE - 1};
@@ -31,31 +32,33 @@ void SnakeG::update() {
 
 void SnakeG::controller() {
     const bool *keystate = SDL_GetKeyboardState(nullptr);
-    SDL_Point curnt_dirct = direction;
     if (keystate[SDL_SCANCODE_UP] && direction.y <= 0) {
-        direction = {0, -1};
+        next_direction = {0, -1};
     } else if (keystate[SDL_SCANCODE_DOWN] && direction.y >= 0) {
-        direction = {0, 1};
+        next_direction = {0, 1};
     } else if (keystate[SDL_SCANCODE_LEFT] && direction.x <= 0) {
-        direction = {-1, 0};
+        next_direction = {-1, 0};
     } else if (keystate[SDL_SCANCODE_RIGHT] && direction.x >= 0) {
-        direction = {1, 0};
+        next_direction = {1, 0};
     }
 
-    if (curnt_dirct.x == direction.x && curnt_dirct.y == direction.y)
+    if (next_direction.x == direction.x && next_direction.y == direction.y)
         return;
 
     change_direction();
 }
 
 void SnakeG::change_direction() {
-    int x, y;
+    float x, y;
     // snakex = (x * GRID_SIZE) + 1, snakey = (y * GRID_SIZE) + 1
-    x = SDL_roundf((snake[0].x - 1) / GRID_SIZE);
-    y = SDL_roundf((snake[0].y - 1) / GRID_SIZE);
-    snake[0].x = (x * GRID_SIZE) + 1;
-    snake[0].y = (y * GRID_SIZE) + 1;
-    snake.insert(snake.begin() + 1, snake[0]);
+    x = (snake[0].x - 1) / GRID_SIZE;
+    y = (snake[0].y - 1) / GRID_SIZE;
+    if (SDL_fmodf(x, 1) == 0 && SDL_fmodf(y, 1) == 0) {
+        direction = next_direction;
+        snake[0].x = (x * GRID_SIZE) + 1;
+        snake[0].y = (y * GRID_SIZE) + 1;
+        snake.insert(snake.begin() + 1, snake[0]);
+    }
 }
 
 void SnakeG::move() {
