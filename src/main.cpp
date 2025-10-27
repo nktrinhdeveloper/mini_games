@@ -7,6 +7,7 @@ const struct CmdMap {
     std::string cmd;
 } cmd_map[] {
     {MiniGame::SNAKE, "snake"},
+    {MiniGame::MINESWEEPER, "minesweeper"},
     {MiniGame::QUIT, "quit"}
 };
 
@@ -16,7 +17,10 @@ void show_entry();
 
 int main(int args, char *arc[]) {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
-        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to init sdl\nError: ", SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to init sdl\nError: %s\n", SDL_GetError());
+        return EXIT_FAILURE;
+    } else if (!TTF_Init()) {
+        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to init sdl ttf\nError: %s\n", SDL_GetError());
         return EXIT_FAILURE;
     }
 
