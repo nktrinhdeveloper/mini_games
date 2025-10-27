@@ -31,6 +31,7 @@ class Game {
         Game &operator=(Game &other) noexcept = delete;
     virtual void update() {}
     virtual void render(SDL_Renderer *renderer) {}
+    virtual void restart() {}
 };
 
 namespace ColorRGB {

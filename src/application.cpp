@@ -75,7 +75,10 @@ void Application::event_listening() {
             if(evt.key.key == SDLK_ESCAPE) {
                 running = false;
                 SDL_HideWindow(window);
+            } else if (evt.key.key == SDLK_SPACE) {
+                game->restart();
             }
+
             break;
         }
     }

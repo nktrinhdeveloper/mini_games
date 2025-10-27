@@ -10,6 +10,11 @@ typedef struct SnakePart {
 
 class SnakeG : public Game{
     private:
+        enum SnakeState{
+            DEAD = -1,
+            HUNT = 0,
+            GROW = 1
+        };
         const float SPEED{0.5f};
         std::vector<SDL_FRect>  snake;
         SDL_Point   direction;
@@ -23,12 +28,13 @@ class SnakeG : public Game{
         void create_random_prey();
         void change_direction();
         int  check_collision(const bool &horz, const bool &pos);
-        void add_tail();
+        void add_tail(const bool &horz, const bool &pos);
     public:
         SnakeG();
         ~SnakeG() override = default;
         void update() override;
         void render(SDL_Renderer *renderer) override;
+        void restart() override;
 };
 
 #endif
