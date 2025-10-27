@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include "SDL3/SDL.h"
+#include "SDL3/SDL_ttf.h"
 
 template <typename T>
 void free_ptr(T **ptr) {
@@ -29,6 +30,7 @@ class Game {
         Game(Game &&other) noexcept = delete;
         Game &operator=(const Game &other) = delete;
         Game &operator=(Game &other) noexcept = delete;
+    virtual bool init(SDL_Renderer *renderer) {return true;};
     virtual void update() {}
     virtual void render(SDL_Renderer *renderer) {}
     virtual void restart() {}
@@ -40,6 +42,10 @@ namespace ColorRGB {
     const SDL_FColor RED    = {1, 0, 0, 1};
     const SDL_FColor GREEN  = {0, 1, 0, 1};
     const SDL_FColor BLUE   = {0, 0, 1, 1};
+    const SDL_FColor MEDIUM_GRAY    = {171/255.F, 171/255.F, 171/255.F, 1};
+    const SDL_FColor LIGHT_GRAY     = {228/255.F, 228/255.F, 228/255.F, 1};
+    const SDL_FColor DARK_GRAY      = {114/255.F, 114/255.F, 114/255.F, 1};
+    
 };
 
 const int GRID_SIZE{25};

@@ -30,8 +30,8 @@ class SnakeG : public Game{
         int  check_collision(const bool &horz, const bool &pos);
         void add_tail(const bool &horz, const bool &pos);
     public:
-        SnakeG();
         ~SnakeG() override = default;
+        bool init(SDL_Renderer *renderer) override;
         void update() override;
         void render(SDL_Renderer *renderer) override;
         void restart() override;

@@ -2,11 +2,13 @@
 #define APPLICATION_H
 
 #include "snake/snake.h"
+#include "minesweeper/minesweeper.h"
 
 typedef enum MiniGame {
     QUIT,
     NO_GAME,
-    SNAKE
+    SNAKE,
+    MINESWEEPER
 } MiniGame;
 
 class Application {
@@ -15,9 +17,11 @@ class Application {
         SDL_Renderer    *renderer;
         bool            running;
         Game            *game;
+        int             game_code;
 
         void event_listening();
         void mainloop();
+        void create_game(const MiniGame &code);
     public:
             Application();
             ~Application() = default;

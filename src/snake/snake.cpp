@@ -43,7 +43,7 @@ static bool has_intersect_snake(const SDL_FPoint &p1, const std::vector<SDL_FRec
     return false;
 }
 
-SnakeG::SnakeG() : Game() {
+bool SnakeG::init(SDL_Renderer *renderer) {
     alive = true;
     direction = {1, 0};
     next_direction = direction;
@@ -51,6 +51,7 @@ SnakeG::SnakeG() : Game() {
     snake.at(0) = {(float)(5 * GRID_SIZE) + 1, (float)(5 * GRID_SIZE) + 1, (float)GRID_SIZE - 1, (float)GRID_SIZE - 1};
     snake.at(1) = {(float)(3 * GRID_SIZE) + 1, (float)(5 * GRID_SIZE) + 1, (float)GRID_SIZE - 1, (float)GRID_SIZE - 1};
     create_random_prey();
+    return true;
 }
 
 void SnakeG::create_random_prey() {
@@ -220,9 +221,6 @@ std::vector<SDL_FRect> SnakeG::get_snake_render_rect() const{
 }
 
 void SnakeG::render(SDL_Renderer *renderer) {
-    SDL_SetRenderDrawColorFloat(renderer, ColorRGB::BLACK.r, ColorRGB::BLACK.g, ColorRGB::BLACK.b, ColorRGB::BLACK.a);
-    SDL_RenderClear(renderer);
-
     // show_grid(renderer);
     std::vector<SDL_FRect> render_snake = get_snake_render_rect();
     SDL_SetRenderDrawColorFloat(renderer, ColorRGB::GREEN.r, ColorRGB::GREEN.g, ColorRGB::GREEN.b, ColorRGB::GREEN.a);
@@ -234,6 +232,4 @@ void SnakeG::render(SDL_Renderer *renderer) {
 
     SDL_SetRenderDrawColorFloat(renderer, ColorRGB::GREEN.r, ColorRGB::GREEN.g, ColorRGB::GREEN.b, ColorRGB::GREEN.a);
     SDL_RenderFillRect(renderer, &prey);
-
-    SDL_RenderPresent(renderer);
 }

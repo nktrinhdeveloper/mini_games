@@ -5,6 +5,7 @@ Application::Application() {
     renderer = nullptr;
     running = false;
     game = nullptr;
+    game_code = MiniGame::NO_GAME;
 }
 
 bool Application::init() {
@@ -24,10 +25,28 @@ bool Application::was_app_init() {
 
 
 void Application::start(const MiniGame &code) {
-    running = true;
-    game = new SnakeG();
+    game_code = code;
+    create_game(code);
     mainloop();
     free_ptr(&game);
+    game_code = MiniGame::NO_GAME;
+}
+
+void Application::create_game(const MiniGame &code) {
+    running = true;
+    switch (code){
+        case MiniGame::SNAKE:
+            game = new SnakeG();
+            break;
+        case MiniGame::MINESWEEPER:
+            game = new MineSweeperG();
+            break;
+        default:
+            running = false;
+    }
+
+    if (game && !game->init(renderer))
+        running = false;
 }
     
 void Application::close() {
@@ -38,7 +57,6 @@ void Application::close() {
 
     free_ptr(&game);
     
-    game = nullptr;
     window = nullptr;
     renderer = nullptr;
     SDL_Quit();
@@ -53,7 +71,11 @@ void Application::mainloop() {
         event_listening();
 
         game->update();
+
+        SDL_SetRenderDrawColorFloat(renderer, ColorRGB::BLACK.r, ColorRGB::BLACK.g, ColorRGB::BLACK.b, ColorRGB::BLACK.a);
+        SDL_RenderClear(renderer);
         game->render(renderer);
+        SDL_RenderPresent(renderer);
 
         now = SDL_GetTicks();
         tpf = now - last_ticks;
@@ -79,6 +101,18 @@ void Application::event_listening() {
                 game->restart();
             }
 
+            break;
+        case SDL_EVENT_MOUSE_MOTION:
+            if (game_code == MiniGame::MINESWEEPER) {
+                MineSweeperG *sweeper = dynamic_cast<MineSweeperG *>(game);
+                sweeper->on_hover(evt.button.x, evt.button.y);
+            }
+            break;
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            if (game_code == MiniGame::MINESWEEPER) {
+                MineSweeperG *sweeper = dynamic_cast<MineSweeperG *>(game);
+                sweeper->on_click();
+            }            
             break;
         }
     }
