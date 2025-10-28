@@ -111,7 +111,7 @@ void Application::event_listening() {
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
             if (game_code == MiniGame::MINESWEEPER) {
                 MineSweeperG *sweeper = dynamic_cast<MineSweeperG *>(game);
-                sweeper->on_click();
+                sweeper->on_click(evt.button.button);
             }            
             break;
         }

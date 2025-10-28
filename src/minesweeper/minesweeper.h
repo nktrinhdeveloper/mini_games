@@ -29,10 +29,15 @@ class MineSweeperG : public Game {
         TTF_TextEngine  *text_engine;
         Button          btns[GRID_ROWS][GRID_COLS];
         SDL_Point       hover_btn;
+        int             nb_safe;
 
         void count_boom(const int &boomr, const int& boomq);
         void create_random_boom();
         void cleanup();
+        void end_game();
+        void open_neighbor(const int &startr, const int &startq);
+        void open_button(const int &r, const int &q);
+        void note_button(const int &r, const int &q);
     public:
         ~MineSweeperG() override;
         bool init(SDL_Renderer *renderer) override;
@@ -40,7 +45,7 @@ class MineSweeperG : public Game {
         void render(SDL_Renderer *renderer) override;
         void restart() override;
         void on_hover(const int &mousex, const int &mousey);
-        void on_click();
+        void on_click(const int &mouse_button);
 };
 
 #endif

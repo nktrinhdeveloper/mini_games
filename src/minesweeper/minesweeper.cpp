@@ -21,6 +21,7 @@ bool MineSweeperG::init(SDL_Renderer *renderer) {
     }
 
     hover_btn = {-1, -1};
+    nb_safe = 0;
     for (int r = 0; r < GRID_ROWS; r++) {
         for (int q = 0; q < GRID_COLS; q++) {
             btns[r][q].rect = {(float)(q * GRID_SIZE) + 1, (float)(r * GRID_SIZE) + 1, (float)GRID_SIZE - 2, (float)GRID_SIZE - 2};
@@ -28,6 +29,7 @@ bool MineSweeperG::init(SDL_Renderer *renderer) {
             btns[r][q].color = ColorRGB::MEDIUM_GRAY;
             btns[r][q].state = ButtonSt::ACTIVE;
             btns[r][q].text.text_obj = TTF_CreateText(text_engine, font, "", 0);
+            btns[r][q].text.text = "";
             btns[r][q].count = 0;
         }
     }
@@ -37,7 +39,9 @@ bool MineSweeperG::init(SDL_Renderer *renderer) {
 
 void MineSweeperG::create_random_boom() {
     int boomrate = 10 + SDL_rand(10);
-    int nb_boom = GRID_ROWS * GRID_COLS * boomrate / 100;
+    int total_btns = GRID_ROWS * GRID_COLS;
+    int nb_boom = total_btns * boomrate / 100;
+    nb_safe = total_btns - nb_boom;
     int r, q;
     while (nb_boom) {
         r = SDL_rand(GRID_ROWS);
@@ -76,32 +80,30 @@ void MineSweeperG::cleanup() {
 
 void MineSweeperG::update() {}
 
-static void set_btn_display_text(Button &btn) {
-    int text_w, text_h;
-    btn.text.text = btn.count < 0 ? "X" : std::to_string(btn.count);
-    TTF_SetTextString(btn.text.text_obj, btn.text.text.c_str(), btn.text.text.length());
-    TTF_GetTextSize(btn.text.text_obj, &text_w, &text_h);
-    btn.text.loc.x = btn.rect.x + ((btn.rect.w - text_w) / 2);
-    btn.text.loc.y = btn.rect.y + ((btn.rect.h - text_h) / 2);
-    if (btn.count < 0)
-        TTF_SetTextColorFloat(btn.text.text_obj, ColorRGB::RED.r, ColorRGB::RED.g, ColorRGB::RED.b, ColorRGB::RED.a);
-    else 
-        TTF_SetTextColorFloat(btn.text.text_obj, ColorRGB::BLACK.r, ColorRGB::BLACK.g, ColorRGB::BLACK.b, ColorRGB::BLACK.a);
-}
-
 void MineSweeperG::render(SDL_Renderer *renderer) {
     for (int r = 0; r < GRID_ROWS; r++) {
         for (int q = 0; q < GRID_COLS; q++) {
             SDL_SetRenderDrawColorFloat(renderer, btns[r][q].color.r, btns[r][q].color.g, btns[r][q].color.b, btns[r][q].color.a);
             SDL_RenderFillRect(renderer, &btns[r][q].rect);
-            if (btns[r][q].text.text.length() == 0)
-                set_btn_display_text(btns[r][q]);
-            TTF_DrawRendererText(btns[r][q].text.text_obj, btns[r][q].text.loc.x, btns[r][q].text.loc.y);
+            if (!btns[r][q].text.text.empty())
+                TTF_DrawRendererText(btns[r][q].text.text_obj, btns[r][q].text.loc.x, btns[r][q].text.loc.y);
         }
     }
 }
 
-void MineSweeperG::restart() {}
+void MineSweeperG::restart() {
+    for (int r = 0; r < GRID_ROWS; r++) {
+        for (int q = 0; q < GRID_COLS; q++) { 
+            btns[r][q].hover = false;
+            btns[r][q].color = ColorRGB::MEDIUM_GRAY;
+            btns[r][q].state = ButtonSt::ACTIVE;
+            btns[r][q].text.text = "";
+            btns[r][q].count = 0;            
+        }
+    }
+    
+    create_random_boom();
+}
 
 void MineSweeperG::on_hover(const int &mousex, const int &mousey) {
     int r, q;
@@ -125,10 +127,90 @@ void MineSweeperG::on_hover(const int &mousex, const int &mousey) {
     }
 }
 
-void MineSweeperG::on_click() {
-    btns[hover_btn.y][hover_btn.x].state = ButtonSt::DISABLE;
-    btns[hover_btn.y][hover_btn.x].hover = false;
-    btns[hover_btn.y][hover_btn.x].color = ColorRGB::DARK_GRAY;
+static void set_btn_display_text(Button &btn) {
+    int text_w, text_h;
+    if (btn.count < 0 && btn.text.text == "O") {
+        TTF_SetTextColorFloat(btn.text.text_obj, ColorRGB::GREEN.r, ColorRGB::GREEN.g, ColorRGB::GREEN.b, ColorRGB::GREEN.a);
+        return;
+    }
+
+    btn.text.text = btn.count < 0 ? "X" : btn.count >= 1000 ? "O" : btn.count == 0 ? "" : std::to_string(btn.count);
+    TTF_SetTextString(btn.text.text_obj, btn.text.text.c_str(), btn.text.text.length());    
+    TTF_GetTextSize(btn.text.text_obj, &text_w, &text_h);
+    btn.text.loc.x = btn.rect.x + ((btn.rect.w - text_w) / 2);
+    btn.text.loc.y = btn.rect.y + ((btn.rect.h - text_h) / 2);
+    if (btn.count < 0 || btn.count >= 1000)
+        TTF_SetTextColorFloat(btn.text.text_obj, ColorRGB::RED.r, ColorRGB::RED.g, ColorRGB::RED.b, ColorRGB::RED.a);
+    else
+        TTF_SetTextColorFloat(btn.text.text_obj, ColorRGB::BLACK.r, ColorRGB::BLACK.g, ColorRGB::BLACK.b, ColorRGB::BLACK.a);
+}
+
+void MineSweeperG::on_click(const int &mouse_button) {
+    if (hover_btn.y < 0 && hover_btn.x < 0) {
+        return;
+    }
+
+    if (mouse_button == SDL_BUTTON_LEFT) {
+        if (btns[hover_btn.y][hover_btn.x].count < 0) {
+            end_game();
+            return;
+        }
+    
+        nb_safe--;
+        open_button(hover_btn.y, hover_btn.x);
+        if (btns[hover_btn.y][hover_btn.x].count == 0)
+            open_neighbor(hover_btn.y, hover_btn.x);
+    
+        hover_btn = {-1, -1};
+    } else if (mouse_button == SDL_BUTTON_RIGHT) {
+        note_button(hover_btn.y, hover_btn.x);
+    }
+
+}
+
+void MineSweeperG::end_game() {
+    for (int r = 0; r < GRID_ROWS; r++) {
+        for (int q = 0; q < GRID_COLS; q++) {
+            if (!btns[r][q].text.text.empty() && btns[r][q].count < 1000)
+                continue;
+
+            open_button(r, q);
+        }
+    }
+
     hover_btn = {-1, -1};
 }
 
+void MineSweeperG::open_button(const int &r, const int &q) {
+    if (btns[r][q].count >= 1000)
+        btns[r][q].count -= 1001;
+    btns[r][q].state = 0;
+    btns[r][q].hover = false;
+    btns[r][q].color = ColorRGB::DARK_GRAY;
+    set_btn_display_text(btns[r][q]);
+    if (nb_safe == 0) {
+        std::cout << "win" << std::endl;
+    }
+}
+
+void MineSweeperG::open_neighbor(const int &startr, const int &startq) {
+    for (int r = startr - 1; r <= startr + 1; r++) {
+        if (r < 0 || r >= GRID_ROWS)
+            continue;
+
+        for (int q = startq - 1; q <= startq + 1; q++) {
+            if (q < 0 || q >= GRID_COLS || btns[r][q].state == ButtonSt::DISABLE)
+                continue;
+ 
+            nb_safe--;
+            open_button(r, q);
+            if (btns[r][q].count == 0)
+                open_neighbor(r, q);            
+        }
+    }
+}
+
+void MineSweeperG::note_button(const int &r , const int &q) {
+    btns[r][q].count += 1001;
+    set_btn_display_text(btns[r][q]);
+}
