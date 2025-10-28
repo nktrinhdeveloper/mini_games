@@ -8,6 +8,7 @@ const struct CmdMap {
 } cmd_map[] {
     {MiniGame::SNAKE, "snake"},
     {MiniGame::MINESWEEPER, "minesweeper"},
+    {MiniGame::TETRIS, "tetris"},
     {MiniGame::QUIT, "quit"}
 };
 

@@ -23,7 +23,6 @@ bool Application::was_app_init() {
     return window && renderer;
 }
 
-
 void Application::start(const MiniGame &code) {
     game_code = code;
     create_game(code);
@@ -40,6 +39,9 @@ void Application::create_game(const MiniGame &code) {
             break;
         case MiniGame::MINESWEEPER:
             game = new MineSweeperG();
+            break;
+        case MiniGame::TETRIS:
+            game = new TetrisG();
             break;
         default:
             running = false;

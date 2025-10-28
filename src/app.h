@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <queue>
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_ttf.h"
 
@@ -34,6 +35,7 @@ class Game {
     virtual void update() {}
     virtual void render(SDL_Renderer *renderer) {}
     virtual void restart() {}
+    virtual void on_keydown(const SDL_Keycode &code) {};
 };
 
 namespace ColorRGB {

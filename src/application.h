@@ -3,12 +3,14 @@
 
 #include "snake/snake.h"
 #include "minesweeper/minesweeper.h"
+#include "tetris/tetris.h"
 
 typedef enum MiniGame {
     QUIT,
     NO_GAME,
     SNAKE,
-    MINESWEEPER
+    MINESWEEPER,
+    TETRIS
 } MiniGame;
 
 class Application {
