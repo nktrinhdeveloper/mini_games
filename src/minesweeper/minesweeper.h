@@ -36,7 +36,7 @@ class MineSweeperG : public Game {
         void cleanup();
         void end_game();
         void open_neighbor(const int &startr, const int &startq);
-        void open_button(const int &r, const int &q);
+        void open_button(const int &r, const int &q, const bool &all = false);
         void note_button(const int &r, const int &q);
     public:
         ~MineSweeperG() override;

@@ -127,9 +127,9 @@ void MineSweeperG::on_hover(const int &mousex, const int &mousey) {
     }
 }
 
-static void set_btn_display_text(Button &btn) {
+static void set_btn_display_text(Button &btn, const bool &end = false) {
     int text_w, text_h;
-    if (btn.count < 0 && btn.text.text == "O") {
+    if (end && btn.count < 0 && btn.text.text == "O") {
         TTF_SetTextColorFloat(btn.text.text_obj, ColorRGB::GREEN.r, ColorRGB::GREEN.g, ColorRGB::GREEN.b, ColorRGB::GREEN.a);
         return;
     }
@@ -151,7 +151,7 @@ void MineSweeperG::on_click(const int &mouse_button) {
     }
 
     if (mouse_button == SDL_BUTTON_LEFT) {
-        if (btns[hover_btn.y][hover_btn.x].count < 0) {
+        if (btns[hover_btn.y][hover_btn.x].count < 0 || btns[hover_btn.y][hover_btn.x].count - 1001 < 0) {
             end_game();
             return;
         }
@@ -174,20 +174,20 @@ void MineSweeperG::end_game() {
             if (!btns[r][q].text.text.empty() && btns[r][q].count < 1000)
                 continue;
 
-            open_button(r, q);
+            open_button(r, q, true);
         }
     }
 
     hover_btn = {-1, -1};
 }
 
-void MineSweeperG::open_button(const int &r, const int &q) {
+void MineSweeperG::open_button(const int &r, const int &q, const bool &all) {
     if (btns[r][q].count >= 1000)
         btns[r][q].count -= 1001;
     btns[r][q].state = 0;
     btns[r][q].hover = false;
     btns[r][q].color = ColorRGB::DARK_GRAY;
-    set_btn_display_text(btns[r][q]);
+    set_btn_display_text(btns[r][q], all);
     if (nb_safe == 0) {
         std::cout << "win" << std::endl;
     }
