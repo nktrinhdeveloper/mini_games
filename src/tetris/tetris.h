@@ -16,6 +16,17 @@ typedef struct Tetromino {
 } Tetromino;
 
 class TetrisG : public Game {
+    public:
+        static const int    AREA_COL_LOWERB{1};
+        static const int    AREA_COLS{24};
+        static const int    SPEED{3};
+        static const int    FALL_SPEED{1};
+        TetrisG();
+        ~TetrisG() override = default;
+        void update() override;
+        void render(SDL_Renderer *renderer) override;
+        void restart() override;
+        void on_keydown(const SDL_Keycode &code) override;
     private:
         enum TetroShape {
             NONE_SHAPE,
@@ -28,14 +39,9 @@ class TetrisG : public Game {
             T_SHAPE
         };
         
-        static const int    AREA_COL_LOWERB{1};
-        static const int    AREA_COL_UPPERB{25};
-        static const int    AREA_COLS{AREA_COL_UPPERB - AREA_COL_LOWERB};
         int         area[GRID_ROWS][AREA_COLS];
-        bool        need_update_area;
         Tetromino   *curr_tetro;
         std::queue<Tetromino> tetros_qu;
-        std::vector<SDL_FRect> rendered_rect;
         
         void create_I_shape_block();
         void create_O_shape_block();
@@ -45,13 +51,7 @@ class TetrisG : public Game {
         void create_J_shape_block();
         void create_T_shape_block();
         void fill_block_queue();
-    public:
-        TetrisG();
-        ~TetrisG() override = default;
-        void update() override;
-        void render(SDL_Renderer *renderer) override;
-        void restart() override;
-        void on_keydown(const SDL_Keycode &code) override;
+        void move_curr_tetro();
 };
 
 #endif

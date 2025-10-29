@@ -1,13 +1,12 @@
 #include "tetris.h"
 
 TetrisG::TetrisG() : Game() {
-    for (int r = 0; r < GRID_ROWS; r++) {
+    // for (int r = 0; r < GRID_ROWS; r++) {
         for (int q = 0; q < AREA_COLS; q++) {
-            area[r][q] = 0;
+            area[GRID_ROWS - 1][q] = 1;
         }
-    }
+    // }
     curr_tetro = nullptr;
-    need_update_area = true;
 }
 
 void TetrisG::update() {
@@ -18,6 +17,7 @@ void TetrisG::update() {
         curr_tetro = &tetros_qu.front();
         curr_tetro->horz_off = 0;
     }
+    move_curr_tetro();
 }
 
 void TetrisG::render(SDL_Renderer *renderer) {
@@ -32,20 +32,53 @@ void TetrisG::render(SDL_Renderer *renderer) {
             SDL_RenderFillRect(renderer, &rect);
         }
     }
+
+    for (int q = 0; q < TetrisG::AREA_COLS; q++) {
+        rect.w = GRID_SIZE;
+        rect.h = GRID_SIZE;
+        rect.x = (q + TetrisG::AREA_COL_LOWERB) * GRID_SIZE;
+        rect.y = 3 * GRID_SIZE;
+        SDL_RenderFillRect(renderer, &rect);
+    }
 }
-        
+
+static void tetro_move_horz(Tetromino *curr_tetro) {
+    int k = curr_tetro->horz_off / SDL_fabsf(curr_tetro->horz_off);
+    bool at_boundry = curr_tetro->blocks[0].x + (k * TetrisG::SPEED) < TetrisG::AREA_COL_LOWERB * GRID_SIZE ||
+                    curr_tetro->blocks[Tetromino::nb_blocks - 1].x + (k * TetrisG::SPEED) > (TetrisG::AREA_COLS - 1) * GRID_SIZE;
+                
+    curr_tetro->horz_off = at_boundry || k * (curr_tetro->horz_off - (k * TetrisG::SPEED)) < 0 ? 0 : curr_tetro->horz_off - (k * TetrisG::SPEED);
+    for (int i = 0; i < Tetromino::nb_blocks; i++) {
+        if (at_boundry || curr_tetro->horz_off == 0) {
+            int posx = SDL_roundf((curr_tetro->blocks[i].x - 1) / GRID_SIZE);
+            curr_tetro->blocks[i].x = (posx * GRID_SIZE) + 1;
+        } else {
+            curr_tetro->blocks[i].x += k * TetrisG::SPEED;
+        }
+    }
+}
+
+void TetrisG::move_curr_tetro() {
+    if (!curr_tetro || curr_tetro->horz_off == 0)
+        return;
+
+    if (curr_tetro->horz_off)
+        tetro_move_horz(curr_tetro);
+}
+
+
 void TetrisG::restart() {}
 
 void TetrisG::on_keydown(const SDL_Keycode &code) {
-    if (!curr_tetro)
+    if (!curr_tetro || curr_tetro->horz_off)
         return;
 
     switch (code){
     case SDLK_LEFT:
-        curr_tetro->horz_off += -GRID_SIZE;
+        curr_tetro->horz_off = -GRID_SIZE;
         break;
     case SDLK_RIGHT:
-        curr_tetro->horz_off += GRID_SIZE;
+        curr_tetro->horz_off = GRID_SIZE;
         break;
     }
 }
