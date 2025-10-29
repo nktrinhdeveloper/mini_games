@@ -193,24 +193,6 @@ void SnakeG::add_tail(const bool &horz, const bool &pos) {
     }
 }
 
-void show_grid(SDL_Renderer *renderer) {
-    int wind_w, wind_h;
-    SDL_FPoint a, b;
-    SDL_GetWindowSize(SDL_GetRenderWindow(renderer), &wind_w, &wind_h);
-    SDL_SetRenderDrawColorFloat(renderer,
-                                ColorRGB::WHITE.r,
-                                ColorRGB::WHITE.g,
-                                ColorRGB::WHITE.b,
-                                ColorRGB::WHITE.a);
-    
-    for (int r = 1; r < wind_h / GRID_SIZE; r++) {
-        SDL_RenderLine(renderer, 0, r * (float) GRID_SIZE, (float) wind_w, r * (float) GRID_SIZE);
-    }
-    for (int q = 1; q < wind_w / GRID_SIZE; q++) {
-        SDL_RenderLine(renderer, q * (float) GRID_SIZE, 0, q * (float) GRID_SIZE, (float)wind_h);
-    }
-}
-
 std::vector<SDL_FRect> SnakeG::get_snake_render_rect() const{
     std::vector<SDL_FRect> ret;
     ret.push_back(snake[0]);

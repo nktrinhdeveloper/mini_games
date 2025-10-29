@@ -64,6 +64,24 @@ void Application::close() {
     SDL_Quit();
 }
 
+void Application::show_grid(SDL_Renderer *renderer) {
+    int wind_w, wind_h;
+    SDL_FPoint a, b;
+    SDL_GetWindowSize(SDL_GetRenderWindow(renderer), &wind_w, &wind_h);
+    SDL_SetRenderDrawColorFloat(renderer,
+                                ColorRGB::WHITE.r,
+                                ColorRGB::WHITE.g,
+                                ColorRGB::WHITE.b,
+                                ColorRGB::WHITE.a);
+    
+    for (int r = 1; r < wind_h / GRID_SIZE; r++) {
+        SDL_RenderLine(renderer, 0, r * (float) GRID_SIZE, (float) wind_w, r * (float) GRID_SIZE);
+    }
+    for (int q = 1; q < wind_w / GRID_SIZE; q++) {
+        SDL_RenderLine(renderer, q * (float) GRID_SIZE, 0, q * (float) GRID_SIZE, (float)wind_h);
+    }
+}
+
 void Application::mainloop() {
     Uint64 now, tpf;
     Uint64 last_ticks = SDL_GetTicks();
@@ -76,6 +94,9 @@ void Application::mainloop() {
 
         SDL_SetRenderDrawColorFloat(renderer, ColorRGB::BLACK.r, ColorRGB::BLACK.g, ColorRGB::BLACK.b, ColorRGB::BLACK.a);
         SDL_RenderClear(renderer);
+
+        show_grid(renderer);
+
         game->render(renderer);
         SDL_RenderPresent(renderer);
 
@@ -96,13 +117,7 @@ void Application::event_listening() {
             SDL_HideWindow(window);
             break;
         case SDL_EVENT_KEY_DOWN:
-            if(evt.key.key == SDLK_ESCAPE) {
-                running = false;
-                SDL_HideWindow(window);
-            } else if (evt.key.key == SDLK_SPACE) {
-                game->restart();
-            }
-
+            handle_key_event(evt);
             break;
         case SDL_EVENT_MOUSE_MOTION:
             if (game_code == MiniGame::MINESWEEPER) {
@@ -120,4 +135,18 @@ void Application::event_listening() {
     }
 }
 
+void Application::handle_key_event(const SDL_Event &evt) {
+    switch (evt.key.key) {
+    case SDLK_ESCAPE:
+        running = false;
+        SDL_HideWindow(window);
+        break;
+    case SDLK_SPACE:
+        game->restart();
+    case SDLK_LEFT:
+    case SDLK_RIGHT:
+        game->on_keydown(evt.key.key);
+        break;
+    }
+}
 

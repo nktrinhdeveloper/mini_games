@@ -3,17 +3,21 @@
 
 #include "app.h"
 
-typedef struct TetrisBlock {
-    static const int nb_rects{4};
-    SDL_FRect   rects[nb_rects];
+typedef struct Tetromino {
+    static const int nb_blocks{4};
+    SDL_FPoint  blocks[nb_blocks];
     int         shape;
-    int         angle; // radian, only 0 and pi/2
+    float       width;
+    float       height;
+    float       horz_off;
+    float       angle; // radian
+    int         anchor_pos;
     SDL_FColor  color;
-} TetrisBlock;
+} Tetromino;
 
 class TetrisG : public Game {
     private:
-        enum BlockShape {
+        enum TetroShape {
             NONE_SHAPE,
             I_SHAPE,
             O_SHAPE,
@@ -25,13 +29,13 @@ class TetrisG : public Game {
         };
         
         static const int    AREA_COL_LOWERB{1};
-        static const int    AREA_COL_UPPERB{13};
+        static const int    AREA_COL_UPPERB{25};
         static const int    AREA_COLS{AREA_COL_UPPERB - AREA_COL_LOWERB};
-        int                     col_pos[TetrisBlock::nb_rects];
-        int                     r_pos[2];
-        SDL_FRect               area[GRID_ROWS][AREA_COLS];
-        TetrisBlock             *curr_block;
-        std::queue<TetrisBlock> blocks_qu;
+        int         area[GRID_ROWS][AREA_COLS];
+        bool        need_update_area;
+        Tetromino   *curr_tetro;
+        std::queue<Tetromino> tetros_qu;
+        std::vector<SDL_FRect> rendered_rect;
         
         void create_I_shape_block();
         void create_O_shape_block();
