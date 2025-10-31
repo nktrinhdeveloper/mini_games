@@ -78,7 +78,6 @@ void SnakeG::restart() {
     create_random_prey();
 }
 
-
 void SnakeG::update() {
     if (alive) {
         controller();
