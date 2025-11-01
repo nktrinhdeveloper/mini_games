@@ -6,6 +6,7 @@ TetrisG::TetrisG() : Game() {
             area[r][q] = 0;
         }
     }
+    top_high = GRID_ROWS - 1;
     curr_tetro = nullptr;
 }
 
@@ -34,6 +35,9 @@ void TetrisG::render(SDL_Renderer *renderer) {
     }
 
     for (int r = GRID_ROWS - 1; r >= 0; r--) {
+        if (r < top_high)
+            break;
+
         for (int q = 0; q < AREA_COLS; q++) {
             if (!area[r][q])
                 continue;
@@ -63,7 +67,7 @@ static void tetro_move_horz(Tetromino *curr_tetro) {
     }
 }
 
-static bool tetro_move_vert(Tetromino *curr_tetro, int (&area)[GRID_ROWS][TetrisG::AREA_COLS]) {
+static bool tetro_move_vert(Tetromino *curr_tetro, int (&area)[GRID_ROWS][TetrisG::AREA_COLS], int &top_high) {
     bool add_to_area = false;
     for (int i = 0; i < Tetromino::nb_blocks; i++) {
         float row = (curr_tetro->blocks[i].y - 1) / GRID_SIZE;
@@ -71,18 +75,20 @@ static bool tetro_move_vert(Tetromino *curr_tetro, int (&area)[GRID_ROWS][Tetris
         float col = ((curr_tetro->blocks[i].x - 1) / GRID_SIZE) - TetrisG::AREA_COL_LOWERB;
 
         if (!add_to_area && (add_to_area = row + extra >= GRID_ROWS || area[(int) (row + extra)][(int) col])) {
-            area[(int) row][(int) col] = 1;
             for (int rev_i = i - 1; rev_i >= 0; rev_i--) {
-                row = (curr_tetro->blocks[rev_i].y - 1) / GRID_SIZE;
-                col = ((curr_tetro->blocks[rev_i].x - 1) / GRID_SIZE) - TetrisG::AREA_COL_LOWERB;
-                area[(int) row][(int) col] = 1;
+                int rev_row = (curr_tetro->blocks[rev_i].y - 1) / GRID_SIZE;
+                int rev_col = ((curr_tetro->blocks[rev_i].x - 1) / GRID_SIZE) - TetrisG::AREA_COL_LOWERB;
+                area[rev_row][rev_col] = 1;
+                if (top_high > rev_row)
+                    top_high = rev_row;
             }
-            continue;
         }
 
-        if (add_to_area)
+        if (add_to_area){
             area[(int) row][(int) col] = 1;
-        else 
+            if (top_high > row)
+                top_high = row;
+        } else 
             curr_tetro->blocks[i].y += Tetromino::FALL_SPEED;
     }
 
@@ -96,7 +102,7 @@ void TetrisG::move_curr_tetro() {
     if (curr_tetro->horz_off)
         tetro_move_horz(curr_tetro);
     
-    if (tetro_move_vert(curr_tetro, area)) {
+    if (tetro_move_vert(curr_tetro, area, top_high)) {
         curr_tetro = nullptr;
         tetros_qu.pop();
     }
@@ -104,16 +110,45 @@ void TetrisG::move_curr_tetro() {
 
 void TetrisG::restart() {}
 
+static void rotate_tetro(Tetromino *tetro, const bool &clockwise) {
+    if (tetro->shape == TetrisG::TetroShape::O_SHAPE)
+        return;
+
+    for (int i = 0; i < Tetromino::nb_blocks; i++) {
+        if (i == tetro->anchor_pos)
+            continue;
+        
+        float distanceX = tetro->blocks[i].x - tetro->blocks[tetro->anchor_pos].x;
+        float distanceY = tetro->blocks[i].y - tetro->blocks[tetro->anchor_pos].y;
+        if (clockwise) {
+            tetro->blocks[i].x = tetro->blocks[tetro->anchor_pos].x - distanceY;
+            tetro->blocks[i].y = tetro->blocks[tetro->anchor_pos].y + distanceX;
+        } else {
+            tetro->blocks[i].x = tetro->blocks[tetro->anchor_pos].x + distanceY;
+            tetro->blocks[i].y = tetro->blocks[tetro->anchor_pos].y - distanceX;
+        }
+    }
+
+}
+
 void TetrisG::on_keydown(const SDL_Keycode &code) {
-    if (!curr_tetro || curr_tetro->horz_off)
+    if (!curr_tetro)
         return;
 
     switch (code){
     case SDLK_LEFT:
-        curr_tetro->horz_off = -GRID_SIZE;
+        if (!curr_tetro->horz_off)
+            curr_tetro->horz_off = -GRID_SIZE;
         break;
     case SDLK_RIGHT:
-        curr_tetro->horz_off = GRID_SIZE;
+        if (!curr_tetro->horz_off)
+            curr_tetro->horz_off = GRID_SIZE;
+        break;
+    case SDLK_UP:
+        rotate_tetro(curr_tetro, false);
+        break;
+    case SDLK_DOWN:
+        rotate_tetro(curr_tetro, true);
         break;
     }
 }
@@ -121,6 +156,8 @@ void TetrisG::on_keydown(const SDL_Keycode &code) {
 static void create_I_shape_block(std::queue<Tetromino> &tetros_qu) {
     Tetromino *tetro = &tetros_qu.emplace();
     tetro->shape = TetrisG::TetroShape::I_SHAPE;
+    tetro->angle = 0;
+    tetro->anchor_pos = 1;
     int i = 0;
     for (int q = 0; q < 4; q++) {
             tetro->blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
@@ -145,6 +182,8 @@ static void create_O_shape_block(std::queue<Tetromino> &tetros_qu) {
 static void create_S_shape_block(std::queue<Tetromino> &tetros_qu) {
     Tetromino *tetro = &tetros_qu.emplace();
     tetro->shape = TetrisG::TetroShape::S_SHAPE;
+    tetro->angle = 0;
+    tetro->anchor_pos = 3;
     int i = 0;
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 3; q++) {
@@ -160,6 +199,8 @@ static void create_S_shape_block(std::queue<Tetromino> &tetros_qu) {
 static void create_Z_shape_block(std::queue<Tetromino> &tetros_qu) {
     Tetromino *tetro = &tetros_qu.emplace();
     tetro->shape = TetrisG::TetroShape::Z_SHAPE;
+    tetro->angle = 0;
+    tetro->anchor_pos = 2;
     int i = 0;
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 3; q++) {
@@ -175,6 +216,8 @@ static void create_Z_shape_block(std::queue<Tetromino> &tetros_qu) {
 static void create_L_shape_block(std::queue<Tetromino> &tetros_qu) {
     Tetromino *tetro = &tetros_qu.emplace();
     tetro->shape = TetrisG::TetroShape::L_SHAPE;
+    tetro->angle = 0;
+    tetro->anchor_pos = 3;
     int i = 0;
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 3; q++) {
@@ -190,6 +233,8 @@ static void create_L_shape_block(std::queue<Tetromino> &tetros_qu) {
 static void create_J_shape_block(std::queue<Tetromino> &tetros_qu) {
     Tetromino *tetro = &tetros_qu.emplace();
     tetro->shape = TetrisG::TetroShape::J_SHAPE;
+    tetro->angle = 0;
+    tetro->anchor_pos = 2;
     int i = 0;
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 3; q++) {
@@ -205,6 +250,8 @@ static void create_J_shape_block(std::queue<Tetromino> &tetros_qu) {
 static void create_T_shape_block(std::queue<Tetromino> &tetros_qu) {
     Tetromino *tetro = &tetros_qu.emplace();
     tetro->shape = TetrisG::TetroShape::T_SHAPE;
+    tetro->angle = 0;
+    tetro->anchor_pos = 1;
     int i = 0;
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 3; q++) {

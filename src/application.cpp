@@ -143,10 +143,9 @@ void Application::handle_key_event(const SDL_Event &evt) {
         break;
     case SDLK_SPACE:
         game->restart();
-    case SDLK_LEFT:
-    case SDLK_RIGHT:
-        game->on_keydown(evt.key.key);
         break;
+    default:
+        game->on_keydown(evt.key.key);
     }
 }
 

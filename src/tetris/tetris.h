@@ -35,8 +35,9 @@ class TetrisG : public Game {
         void render(SDL_Renderer *renderer) override;
         void restart() override;
         void on_keydown(const SDL_Keycode &code) override;
-    private:        
+    private:
         int         area[GRID_ROWS][AREA_COLS];
+        int         top_high;
         Tetromino   *curr_tetro;
         std::queue<Tetromino> tetros_qu;
         
