@@ -95,7 +95,7 @@ void Application::mainloop() {
         SDL_SetRenderDrawColorFloat(renderer, ColorRGB::BLACK.r, ColorRGB::BLACK.g, ColorRGB::BLACK.b, ColorRGB::BLACK.a);
         SDL_RenderClear(renderer);
 
-        show_grid(renderer);
+        // show_grid(renderer);
 
         game->render(renderer);
         SDL_RenderPresent(renderer);

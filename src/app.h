@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <algorithm>
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_ttf.h"
 

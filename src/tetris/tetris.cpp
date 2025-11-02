@@ -24,7 +24,7 @@ static void check_minmax_horz(Tetromino *tetro, const int &idx, float &minx, flo
     if (tetro->blocks[idx].x > maxx) {
         maxx = tetro->blocks[idx].x;
         tetro->maxx_pos = idx;
-    }    
+    }
 }
 
 static void create_I_shape_block(std::queue<Tetromino> &tetros_qu) {
@@ -189,8 +189,54 @@ static bool check_and_remove_full_row(int (&area)[GRID_ROWS][TetrisG::AREA_COLS]
     return true;
 }
 
+static void drop_content(int (&area)[GRID_ROWS][TetrisG::AREA_COLS], int &top_high, const int &count, const int &drop_start) {
+    if (count == 0) {
+        return;
+    }
+
+    for (int r = drop_start - 1; r >= top_high; r--) {
+        for (int q = 0; q < TetrisG::AREA_COLS; q++) {
+            if (!area[r][q])
+                continue;
+            
+            area[r + count][q] = 1;
+            area[r][q] = 0;            
+        }
+    }
+    top_high += count;
+}
+
+static void drop_area_content_one_line(int (&area)[GRID_ROWS][TetrisG::AREA_COLS], int &top_high, int *full_rows) {
+    int drop_start = -1;
+    int count = 0;
+    int contiguous = -1;
+    std::sort(full_rows, full_rows + Tetromino::nb_blocks);
+    for (int i = 0; i < Tetromino::nb_blocks; i++) {
+        if (drop_start < 0) {
+            drop_start = full_rows[i];
+            contiguous = drop_start;
+            continue;
+        }
+
+        count += 1;
+        if (contiguous + 1 == full_rows[i]){
+            contiguous += 1;
+        } else {
+            drop_content(area, top_high, count, drop_start);
+            count = 0;
+            drop_start = full_rows[i];
+            contiguous = drop_start;
+        }
+    }
+    if (drop_start > 0)
+        count += 1;
+    drop_content(area, top_high, count, drop_start);
+}
+
 static bool tetro_move_vert(Tetromino *curr_tetro, int (&area)[GRID_ROWS][TetrisG::AREA_COLS], int &top_high) {
     bool add_to_area = false;
+    int full_row[Tetromino::nb_blocks] = {-1, -1, -1, -1};
+    int count_full_line = 0;
     for (int i = 0; i < Tetromino::nb_blocks; i++) {
         float row = (curr_tetro->blocks[i].y - 1) / GRID_SIZE;
         float extra = (float) (Tetromino::FALL_SPEED + GRID_SIZE - 1) / GRID_SIZE;
@@ -200,33 +246,31 @@ static bool tetro_move_vert(Tetromino *curr_tetro, int (&area)[GRID_ROWS][Tetris
             for (int rev_i = i - 1; rev_i >= 0; rev_i--) {
                 int rev_row = (curr_tetro->blocks[rev_i].y - 1) / GRID_SIZE;
                 int rev_col = ((curr_tetro->blocks[rev_i].x - 1) / GRID_SIZE) - TetrisG::AREA_COL_LOWERB;
-                if (check_and_remove_full_row(area, rev_row)) {
-                    top_high = top_high + 1 >= GRID_ROWS ? GRID_ROWS - 1 : top_high + 1;
-                    continue;
-                }
-
+                
                 area[rev_row][rev_col] = 1;
-                printf("row: %d, col: %d\n", rev_row, rev_col);
                 if (top_high > rev_row)
                     top_high = rev_row;
+
+                if (check_and_remove_full_row(area, rev_row)) {
+                    full_row[rev_i] = rev_row;
+                }
             }
         }
 
         if (add_to_area){
-            if (check_and_remove_full_row(area, row)) {
-                top_high = top_high + 1 >= GRID_ROWS ? GRID_ROWS - 1 : top_high + 1;
-                continue;
-            }
-            printf("row: %d, col: %d\n", (int) row, (int) col);
             area[(int) row][(int) col] = 1;
             if (top_high > row)
                 top_high = row;
+            
+            if (check_and_remove_full_row(area, row)) {
+                full_row[i] = row;
+            }
+            
         } else 
             curr_tetro->blocks[i].y += Tetromino::FALL_SPEED;
     }
 
-    if (add_to_area)
-        printf("-------------------\n");
+    drop_area_content_one_line(area, top_high, full_row);
     return add_to_area;
 }
 
@@ -278,54 +322,36 @@ void TetrisG::update() {
     move_curr_tetro();
 }
 
-static void add_boundry_cols(std::vector<SDL_FRect> &rects) {
-    SDL_FRect rect;
-    rect.x = 0;
-    rect.y = 0;
-    rect.w = GRID_SIZE;
-    rect.h = GRID_ROWS * GRID_ROWS;
-    rects.push_back(rect);
-    rect.x = (TetrisG::AREA_COLS + TetrisG::AREA_COL_LOWERB) * GRID_SIZE;
-    rects.push_back(rect);    
+static void add_boundry_cols(SDL_Renderer *renderer) {
+    SDL_FRect rects[2];
+    rects[0].x = 1;
+    rects[0].y = 0;
+    rects[0].w = GRID_SIZE - 1;
+    rects[0].h = GRID_ROWS * GRID_ROWS + GRID_SIZE;
+    rects[1].x = (TetrisG::AREA_COLS + TetrisG::AREA_COL_LOWERB) * GRID_SIZE + 1;
+    rects[1].y = 0;
+    rects[1].w = GRID_SIZE - 1;
+    rects[1].h = GRID_ROWS * GRID_ROWS + GRID_SIZE;
+    SDL_SetRenderDrawColorFloat(renderer, ColorRGB::MEDIUM_GRAY.r, ColorRGB::MEDIUM_GRAY.g, ColorRGB::MEDIUM_GRAY.b, ColorRGB::MEDIUM_GRAY.a);
+    SDL_RenderFillRects(renderer, rects, 2);
 }
 
 void TetrisG::render(SDL_Renderer *renderer) {
     SDL_FRect rect;
     std::vector<SDL_FRect> rects;
+    std::vector<SDL_FRect> tetro_rects;
     rect.w = GRID_SIZE - 1;
     rect.h = GRID_SIZE - 1;
-    add_boundry_cols(rects);
+    add_boundry_cols(renderer);
     if (curr_tetro) {
         for (int i = 0; i < Tetromino::nb_blocks; i++) {
-            if (i == curr_tetro->minx_pos) {
-                SDL_SetRenderDrawColorFloat(renderer, ColorRGB::RED.r, ColorRGB::RED.g, ColorRGB::RED.b, ColorRGB::RED.a);
-                rect.x = curr_tetro->blocks[i].x;
-                rect.y = curr_tetro->blocks[i].y;
-                SDL_RenderFillRect(renderer, &rect);
-                continue;
-            } else if (i == curr_tetro->maxx_pos) {
-                SDL_SetRenderDrawColorFloat(renderer, ColorRGB::BLUE.r, ColorRGB::BLUE.g, ColorRGB::BLUE.b, ColorRGB::BLUE.a);
-                rect.x = curr_tetro->blocks[i].x;
-                rect.y = curr_tetro->blocks[i].y;
-                SDL_RenderFillRect(renderer, &rect);
-                continue;
-            } else if (i == curr_tetro->anchor_pos) {
-                SDL_SetRenderDrawColorFloat(renderer, ColorRGB::WHITE.r, ColorRGB::WHITE.g, ColorRGB::WHITE.b, ColorRGB::WHITE.a);
-                rect.x = curr_tetro->blocks[i].x;
-                rect.y = curr_tetro->blocks[i].y;
-                SDL_RenderFillRect(renderer, &rect);
-                continue;
-            }
             rect.x = curr_tetro->blocks[i].x;
             rect.y = curr_tetro->blocks[i].y;
-            rects.push_back(rect);
+            tetro_rects.push_back(rect);
         }
     }
 
-    for (int r = GRID_ROWS - 1; r >= 0; r--) {
-        if (r < top_high)
-            break;
-
+    for (int r = GRID_ROWS - 1; r >= top_high; r--) {
         for (int q = 0; q < AREA_COLS; q++) {
             if (!area[r][q])
                 continue;
@@ -336,7 +362,10 @@ void TetrisG::render(SDL_Renderer *renderer) {
         }
     }
 
-    SDL_SetRenderDrawColorFloat(renderer, ColorRGB::GREEN.r, ColorRGB::GREEN.g, ColorRGB::GREEN.b, ColorRGB::GREEN.a);
+    SDL_SetRenderDrawColorFloat(renderer, ColorRGB::LIGHT_GRAY.r, ColorRGB::LIGHT_GRAY.g, ColorRGB::LIGHT_GRAY.b, ColorRGB::LIGHT_GRAY.a);
+    SDL_RenderFillRects(renderer, tetro_rects.data(), tetro_rects.size());
+
+    SDL_SetRenderDrawColorFloat(renderer, ColorRGB::DARK_GRAY.r, ColorRGB::DARK_GRAY.g, ColorRGB::DARK_GRAY.b, ColorRGB::DARK_GRAY.a);
     SDL_RenderFillRects(renderer, rects.data(), rects.size());
 }
 
