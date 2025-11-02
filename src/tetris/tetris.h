@@ -6,13 +6,14 @@
 typedef struct Tetromino {
     static const int        nb_blocks{4};
     static constexpr float  SPEED{3.f};
-    static constexpr float  FALL_SPEED{0.5f};
+    static constexpr float  FALL_SPEED{0.25f};
     SDL_FPoint  blocks[nb_blocks];
     int         shape;
     float       horz_off;
-    float       angle; // radian
     int         anchor_pos;
     SDL_FColor  color;
+    int         minx_pos;
+    int         maxx_pos;
 } Tetromino;
 
 class TetrisG : public Game {
