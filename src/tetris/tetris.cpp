@@ -430,6 +430,15 @@ void TetrisG::render(SDL_Renderer *renderer) {
         tetro_rects.push_back(rect);
     }
 
+    float offsetx, offsety;
+    offsetx = (TetrisG::AREA_COLS + TetrisG::AREA_COL_LOWERB + 2) * GRID_SIZE - next_tetro.blocks[next_tetro.minx_pos].x + 1;
+    offsety = 2 * GRID_SIZE - next_tetro.blocks[next_tetro.minx_pos].y + 1;
+    for (int i = 0; i < Tetromino::nb_blocks; i++) {
+        rect.x = next_tetro.blocks[i].x + offsetx;
+        rect.y = next_tetro.blocks[i].y + offsety;
+        tetro_rects.push_back(rect);
+    }
+
     for (int r = GRID_ROWS - 1; r >= top_high; r--) {
         for (int q = 0; q < AREA_COLS; q++) {
             if (!area[r][q])
