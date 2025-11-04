@@ -8,7 +8,7 @@ Application::Application() {
     game_code = MiniGame::NO_GAME;
 }
 
-bool Application::init() {
+bool Application::init(const std::string &dir) {
     if (!(window = SDL_CreateWindow("MiniGame", GRID_SIZE * GRID_COLS, GRID_SIZE * GRID_ROWS, SDL_WINDOW_HIDDEN))) {
         SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to create window\nError: ", SDL_GetError());
         return false;
@@ -16,6 +16,7 @@ bool Application::init() {
         SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to create renderer\nError: ", SDL_GetError());
         return false;
     }
+    running_dir = dir;
     return true;
 }
 
@@ -47,7 +48,7 @@ void Application::create_game(const MiniGame &code) {
             running = false;
     }
 
-    if (game && !game->init(renderer))
+    if (game && !game->init(renderer, running_dir))
         running = false;
 }
     

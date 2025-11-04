@@ -43,7 +43,7 @@ static bool has_intersect_snake(const SDL_FPoint &p1, const std::vector<SDL_FRec
     return false;
 }
 
-bool SnakeG::init(SDL_Renderer *renderer) {
+bool SnakeG::init(SDL_Renderer *renderer, const std::string &running_dir) {
     alive = true;
     direction = {1, 0};
     next_direction = direction;

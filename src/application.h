@@ -20,6 +20,7 @@ class Application {
         bool            running;
         Game            *game;
         int             game_code;
+        std::string running_dir;
 
         void event_listening();
         void mainloop();
@@ -33,7 +34,7 @@ class Application {
             Application(Application &&other) noexcept = delete;
             Application &operator=(const Application &other) = delete;
             Application &operator=(Application &&other) noexcept = delete;
-        bool init();
+        bool init(const std::string &dir);
         bool was_app_init();
         void start(const MiniGame &code);
         void close();

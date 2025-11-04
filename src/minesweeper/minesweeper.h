@@ -40,7 +40,7 @@ class MineSweeperG : public Game {
         void note_button(const int &r, const int &q);
     public:
         ~MineSweeperG() override;
-        bool init(SDL_Renderer *renderer) override;
+        bool init(SDL_Renderer *renderer, const std::string &running_dir) override;
         void update() override;
         void render(SDL_Renderer *renderer) override;
         void restart() override;

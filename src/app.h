@@ -5,6 +5,7 @@
 #include <vector>
 #include <queue>
 #include <algorithm>
+#include <filesystem>
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_ttf.h"
 
@@ -32,7 +33,7 @@ class Game {
         Game(Game &&other) noexcept = delete;
         Game &operator=(const Game &other) = delete;
         Game &operator=(Game &other) noexcept = delete;
-    virtual bool init(SDL_Renderer *renderer) {return true;};
+    virtual bool init(SDL_Renderer *renderer, const std::string &running_dir) {return true;};
     virtual void update() {}
     virtual void render(SDL_Renderer *renderer) {}
     virtual void restart() {}
@@ -54,5 +55,7 @@ namespace ColorRGB {
 const int GRID_SIZE{25};
 const int GRID_COLS{32};
 const int GRID_ROWS{24};
+const std::string APP_DIR_NAME{"mini_games"};
+const std::string WICKED_MOUSE_FONT{"fonts\\wicked_mouse.ttf"};
 
 #endif

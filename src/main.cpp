@@ -15,8 +15,15 @@ const struct CmdMap {
 std::string to_lower_string(const std::string &str);
 bool get_game_from_input(const std::string &str, int &game);
 void show_entry();
+std::filesystem::path get_running_dir(const std::string &str);
 
-int main(int args, char *arc[]) {
+int main(int args, char *argc[]) {
+    std::filesystem::path running_dir = get_running_dir(argc[0]);
+    if (running_dir.empty()) {
+        std::cout << "cannot find running dir" << std::endl;
+        return EXIT_FAILURE;
+    }
+
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to init sdl\nError: %s\n", SDL_GetError());
         return EXIT_FAILURE;
@@ -37,7 +44,7 @@ int main(int args, char *arc[]) {
             return EXIT_FAILURE;
             // continue;
 
-        if (!app.was_app_init() && !app.init())
+        if (!app.was_app_init() && !app.init(running_dir.string()))
             return EXIT_FAILURE;
 
         app.start((MiniGame)game);
@@ -80,3 +87,15 @@ bool get_game_from_input(const std::string &str, int &game) {
     return false;
 }
 
+std::filesystem::path get_running_dir(const std::string &str) {
+    int count = 0;
+    std::filesystem::path path(str);
+    while (path != path.root_path() || count != 50) {
+        count++;
+        if (path.filename().string() != APP_DIR_NAME)
+            path = path.parent_path();
+        else 
+            return path;
+    }
+    return {};
+}

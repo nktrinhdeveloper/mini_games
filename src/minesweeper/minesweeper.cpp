@@ -11,8 +11,9 @@ MineSweeperG::~MineSweeperG() {
     font = nullptr;
 }
 
-bool MineSweeperG::init(SDL_Renderer *renderer) {
-    if (!(font = TTF_OpenFont("C:\\Users\\Admin\\Desktop\\projects\\mini_games\\fonts\\wicked_mouse.ttf", 14))) {
+bool MineSweeperG::init(SDL_Renderer *renderer, const std::string &app_dir_str) {
+    std::filesystem::path font_dir = std::filesystem::path(app_dir_str) / WICKED_MOUSE_FONT;
+    if (!(font = TTF_OpenFont(font_dir.string().c_str(), 14))) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "failed to open font\nError: %s\n", SDL_GetError());
         return false;
     } else if (!(text_engine = TTF_CreateRendererTextEngine(renderer))) {
@@ -151,7 +152,7 @@ void MineSweeperG::on_click(const int &mouse_button) {
     }
 
     if (mouse_button == SDL_BUTTON_LEFT) {
-        if (btns[hover_btn.y][hover_btn.x].count < 0 || btns[hover_btn.y][hover_btn.x].count - 1001 < 0) {
+        if (btns[hover_btn.y][hover_btn.x].count < 0 || (btns[hover_btn.y][hover_btn.x].count >= 1000 && btns[hover_btn.y][hover_btn.x].count - 1001 < 0)) {
             end_game();
             return;
         }
