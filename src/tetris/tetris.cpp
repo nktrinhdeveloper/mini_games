@@ -1,69 +1,90 @@
 #include "tetris.h"
 
-static void correct_horz_position_after_rotate(Tetromino *tetro, const bool &add) {
+static void set_tetro_default(Tetromino &tetro) {
+    for (int i = 0; i < Tetromino::nb_blocks; i++)
+        tetro.blocks[i] = {0, 0};
+    
+    tetro.shape = TetrisG::TetroShape::NONE_SHAPE;
+    tetro.horz_off = 0;
+    tetro.anchor_pos = 0;
+    tetro.color = ColorRGB::BLACK;
+    tetro.minx_pos = 0;
+    tetro.maxx_pos = 0;
+}
+
+static bool correct_horz_position_after_rotate(Tetromino &tetro,  const int (&area)[GRID_ROWS][TetrisG::AREA_COLS]) {
+    int col, row;
+    bool add;
+
+    if (tetro.blocks[tetro.minx_pos].x <= TetrisG::AREA_COL_LOWERB * GRID_SIZE)
+        add = true;
+    else if (tetro.blocks[tetro.maxx_pos].x >= (TetrisG::AREA_COLS + TetrisG::AREA_COL_LOWERB) * GRID_SIZE)
+        add = false;
+    else 
+        return true;
+
     for (int i = 0; i < Tetromino::nb_blocks; i++) {
         if (add)
-            tetro->blocks[i].x += GRID_SIZE;
+            tetro.blocks[i].x += GRID_SIZE;
         else
-            tetro->blocks[i].x -= GRID_SIZE;
+            tetro.blocks[i].x -= GRID_SIZE;
+
+        col = (tetro.blocks[i].x - 1) / GRID_SIZE - TetrisG::AREA_COL_LOWERB;
+        row = (tetro.blocks[i].y - 1) / GRID_SIZE;
+        if (area[row][col]) {
+            return false;
+        }
     }
 
-    if (tetro->blocks[tetro->minx_pos].x <= TetrisG::AREA_COL_LOWERB * GRID_SIZE)
-        correct_horz_position_after_rotate(tetro, true);
-    else if (tetro->blocks[tetro->maxx_pos].x >= (TetrisG::AREA_COLS + TetrisG::AREA_COL_LOWERB) * GRID_SIZE)
-        correct_horz_position_after_rotate(tetro, false);
-
+    return correct_horz_position_after_rotate(tetro, area);
 }
 
-static void check_minmax_horz(Tetromino *tetro, const int &idx, float &minx, float &maxx) {
-    if (tetro->blocks[idx].x < minx) {
-        minx = tetro->blocks[idx].x;
-        tetro->minx_pos = idx;
+static void check_minmax_horz(Tetromino &tetro, const int &idx, float &minx, float &maxx) {
+    if (tetro.blocks[idx].x < minx) {
+        minx = tetro.blocks[idx].x;
+        tetro.minx_pos = idx;
     }
 
-    if (tetro->blocks[idx].x > maxx) {
-        maxx = tetro->blocks[idx].x;
-        tetro->maxx_pos = idx;
+    if (tetro.blocks[idx].x > maxx) {
+        maxx = tetro.blocks[idx].x;
+        tetro.maxx_pos = idx;
     }
 }
 
-static void create_I_shape_block(std::queue<Tetromino> &tetros_qu) {
-    Tetromino *tetro = &tetros_qu.emplace();
-    tetro->shape = TetrisG::TetroShape::I_SHAPE;
-    tetro->anchor_pos = 1;
+static void create_I_shape_block(Tetromino &tetro) {
+    tetro.shape = TetrisG::TetroShape::I_SHAPE;
+    tetro.anchor_pos = 1;
     float minx, maxx;
     minx = SDL_MAX_SINT16;
     maxx = 0;
     int i = 0;
     for (int q = 0; q < 4; q++) {
-            tetro->blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
-            tetro->blocks[i].y = 1;
+            tetro.blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
+            tetro.blocks[i].y = 1;
             check_minmax_horz(tetro, i, minx, maxx);
             i++;
     }
 }
 
-static void create_O_shape_block(std::queue<Tetromino> &tetros_qu) {
-    Tetromino *tetro = &tetros_qu.emplace();
-    tetro->shape = TetrisG::TetroShape::O_SHAPE;
+static void create_O_shape_block(Tetromino &tetro) {
+    tetro.shape = TetrisG::TetroShape::O_SHAPE;
     float minx, maxx;
     minx = SDL_MAX_SINT16;
     maxx = 0;
     int i = 0;
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 2; q++) {
-            tetro->blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
-            tetro->blocks[i].y = (r * GRID_SIZE) + 1;
+            tetro.blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
+            tetro.blocks[i].y = (r * GRID_SIZE) + 1;
             check_minmax_horz(tetro, i, minx, maxx);
             i++;
         }
     }
 }
 
-static void create_S_shape_block(std::queue<Tetromino> &tetros_qu) {
-    Tetromino *tetro = &tetros_qu.emplace();
-    tetro->shape = TetrisG::TetroShape::S_SHAPE;
-    tetro->anchor_pos = 3;
+static void create_S_shape_block(Tetromino &tetro) {
+    tetro.shape = TetrisG::TetroShape::S_SHAPE;
+    tetro.anchor_pos = 3;
     float minx, maxx;
     minx = SDL_MAX_SINT16;
     maxx = 0;
@@ -71,8 +92,8 @@ static void create_S_shape_block(std::queue<Tetromino> &tetros_qu) {
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 3; q++) {
             if (q + r > 0 && q + r < 3) {
-                tetro->blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
-                tetro->blocks[i].y = (r * GRID_SIZE) + 1;
+                tetro.blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
+                tetro.blocks[i].y = (r * GRID_SIZE) + 1;
                 check_minmax_horz(tetro, i, minx, maxx);
                 i++;
             }
@@ -80,10 +101,9 @@ static void create_S_shape_block(std::queue<Tetromino> &tetros_qu) {
     }
 }
 
-static void create_Z_shape_block(std::queue<Tetromino> &tetros_qu) {
-    Tetromino *tetro = &tetros_qu.emplace();
-    tetro->shape = TetrisG::TetroShape::Z_SHAPE;
-    tetro->anchor_pos = 2;
+static void create_Z_shape_block(Tetromino &tetro) {
+    tetro.shape = TetrisG::TetroShape::Z_SHAPE;
+    tetro.anchor_pos = 2;
     float minx, maxx;
     minx = SDL_MAX_SINT16;
     maxx = 0;
@@ -91,8 +111,8 @@ static void create_Z_shape_block(std::queue<Tetromino> &tetros_qu) {
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 3; q++) {
             if (q - r >= 0 && q - r < 2) {
-                tetro->blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
-                tetro->blocks[i].y = (r * GRID_SIZE) + 1;
+                tetro.blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
+                tetro.blocks[i].y = (r * GRID_SIZE) + 1;
                 check_minmax_horz(tetro, i, minx, maxx);
                 i++;
             }
@@ -100,10 +120,9 @@ static void create_Z_shape_block(std::queue<Tetromino> &tetros_qu) {
     }    
 }
 
-static void create_L_shape_block(std::queue<Tetromino> &tetros_qu) {
-    Tetromino *tetro = &tetros_qu.emplace();
-    tetro->shape = TetrisG::TetroShape::L_SHAPE;
-    tetro->anchor_pos = 3;
+static void create_L_shape_block(Tetromino &tetro) {
+    tetro.shape = TetrisG::TetroShape::L_SHAPE;
+    tetro.anchor_pos = 3;
     float minx, maxx;
     minx = SDL_MAX_SINT16;
     maxx = 0;
@@ -111,8 +130,8 @@ static void create_L_shape_block(std::queue<Tetromino> &tetros_qu) {
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 3; q++) {
             if ((r == 0 && q == 2) || r == 1 ) {
-                tetro->blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
-                tetro->blocks[i].y = (r * GRID_SIZE) + 1;
+                tetro.blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
+                tetro.blocks[i].y = (r * GRID_SIZE) + 1;
                 check_minmax_horz(tetro, i, minx, maxx);
                 i++;
             }
@@ -120,10 +139,9 @@ static void create_L_shape_block(std::queue<Tetromino> &tetros_qu) {
     }    
 }
 
-static void create_J_shape_block(std::queue<Tetromino> &tetros_qu) {
-    Tetromino *tetro = &tetros_qu.emplace();
-    tetro->shape = TetrisG::TetroShape::J_SHAPE;
-    tetro->anchor_pos = 2;
+static void create_J_shape_block(Tetromino &tetro) {
+    tetro.shape = TetrisG::TetroShape::J_SHAPE;
+    tetro.anchor_pos = 2;
     float minx, maxx;
     minx = SDL_MAX_SINT16;
     maxx = 0;
@@ -131,8 +149,8 @@ static void create_J_shape_block(std::queue<Tetromino> &tetros_qu) {
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 3; q++) {
             if ((r == 1 && q == 2) || r == 0) {
-                tetro->blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
-                tetro->blocks[i].y = (r * GRID_SIZE) + 1;
+                tetro.blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
+                tetro.blocks[i].y = (r * GRID_SIZE) + 1;
                 check_minmax_horz(tetro, i, minx, maxx);
                 i++;
             }
@@ -140,10 +158,9 @@ static void create_J_shape_block(std::queue<Tetromino> &tetros_qu) {
     }    
 }
 
-static void create_T_shape_block(std::queue<Tetromino> &tetros_qu) {
-    Tetromino *tetro = &tetros_qu.emplace();
-    tetro->shape = TetrisG::TetroShape::T_SHAPE;
-    tetro->anchor_pos = 1;
+static void create_T_shape_block(Tetromino &tetro) {
+    tetro.shape = TetrisG::TetroShape::T_SHAPE;
+    tetro.anchor_pos = 1;
     float minx, maxx;
     minx = SDL_MAX_SINT16;
     maxx = 0;
@@ -151,8 +168,8 @@ static void create_T_shape_block(std::queue<Tetromino> &tetros_qu) {
     for (int r = 0; r < 2; r++) {
         for (int q = 0; q < 3; q++) {
             if ((r == 1 && q == 1) || r == 0) {
-                tetro->blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
-                tetro->blocks[i].y = (r * GRID_SIZE) + 1;
+                tetro.blocks[i].x = (((TetrisG::AREA_COLS / 2) - 2 + TetrisG::AREA_COL_LOWERB + q) * GRID_SIZE) + 1;
+                tetro.blocks[i].y = (r * GRID_SIZE) + 1;
                 check_minmax_horz(tetro, i, minx, maxx);
                 i++;
             }
@@ -160,18 +177,31 @@ static void create_T_shape_block(std::queue<Tetromino> &tetros_qu) {
     }
 }
 
-static void tetro_move_horz(Tetromino *curr_tetro) {
-    int k = curr_tetro->horz_off / SDL_fabsf(curr_tetro->horz_off);
-    bool at_boundry = curr_tetro->blocks[curr_tetro->minx_pos].x + (k * Tetromino::SPEED) < TetrisG::AREA_COL_LOWERB * GRID_SIZE ||
-                    curr_tetro->blocks[curr_tetro->maxx_pos].x + (k * Tetromino::SPEED) > TetrisG::AREA_COLS * GRID_SIZE;
+static void tetro_move_horz(Tetromino &curr_tetro, const int (&area)[GRID_ROWS][TetrisG::AREA_COLS]) {
+    int k = curr_tetro.horz_off / SDL_fabsf(curr_tetro.horz_off);
+    bool at_boundry = curr_tetro.blocks[curr_tetro.minx_pos].x + (k * Tetromino::SPEED) < TetrisG::AREA_COL_LOWERB * GRID_SIZE ||
+                    curr_tetro.blocks[curr_tetro.maxx_pos].x + (k * Tetromino::SPEED) > TetrisG::AREA_COLS * GRID_SIZE;
                 
-    curr_tetro->horz_off = at_boundry || k * (curr_tetro->horz_off - (k * Tetromino::SPEED)) < 0 ? 0 : curr_tetro->horz_off - (k * Tetromino::SPEED);
+    curr_tetro.horz_off = at_boundry || k * (curr_tetro.horz_off - (k * Tetromino::SPEED)) < 0 ? 0 : curr_tetro.horz_off - (k * Tetromino::SPEED);
     for (int i = 0; i < Tetromino::nb_blocks; i++) {
-        if (at_boundry || curr_tetro->horz_off == 0) {
-            int posx = SDL_roundf((curr_tetro->blocks[i].x - 1) / GRID_SIZE);
-            curr_tetro->blocks[i].x = (posx * GRID_SIZE) + 1;
+        int col, row;
+        col = SDL_roundf((curr_tetro.blocks[i].x - 1) / GRID_SIZE);
+        row = (curr_tetro.blocks[i].y - 1) / GRID_SIZE;
+        if (curr_tetro.horz_off && (area[row][col - TetrisG::AREA_COL_LOWERB + k] || area[row + 1][col - TetrisG::AREA_COL_LOWERB + k])) {
+            for (int rev_i = i - 1; rev_i >= 0; rev_i--) {
+                curr_tetro.blocks[rev_i].x -= k * Tetromino::SPEED;
+                int rev_vol = SDL_roundf((curr_tetro.blocks[rev_i].x - 1) / GRID_SIZE);
+                int rev_row = (curr_tetro.blocks[rev_i].y - 1) / GRID_SIZE;
+                curr_tetro.blocks[rev_i].x = (rev_vol * GRID_SIZE) + 1;
+            }
+        
+            curr_tetro.horz_off = 0;
+        }
+
+        if (at_boundry || !curr_tetro.horz_off) {
+            curr_tetro.blocks[i].x = (col * GRID_SIZE) + 1;
         } else {
-            curr_tetro->blocks[i].x += k * Tetromino::SPEED;
+            curr_tetro.blocks[i].x += k * Tetromino::SPEED;
         }
     }
 }
@@ -233,19 +263,20 @@ static void drop_area_content_one_line(int (&area)[GRID_ROWS][TetrisG::AREA_COLS
     drop_content(area, top_high, count, drop_start);
 }
 
-static bool tetro_move_vert(Tetromino *curr_tetro, int (&area)[GRID_ROWS][TetrisG::AREA_COLS], int &top_high) {
+static bool tetro_move_vert(Tetromino &curr_tetro, int (&area)[GRID_ROWS][TetrisG::AREA_COLS], int &top_high, const bool &commit) {
     bool add_to_area = false;
     int full_row[Tetromino::nb_blocks] = {-1, -1, -1, -1};
     int count_full_line = 0;
+    float fall_speed = commit ? Tetromino::FALL_SPEED * 20 : Tetromino::FALL_SPEED;
     for (int i = 0; i < Tetromino::nb_blocks; i++) {
-        float row = (curr_tetro->blocks[i].y - 1) / GRID_SIZE;
-        float extra = (float) (Tetromino::FALL_SPEED + GRID_SIZE - 1) / GRID_SIZE;
-        float col = ((curr_tetro->blocks[i].x - 1) / GRID_SIZE) - TetrisG::AREA_COL_LOWERB;
+        float row = commit ? SDL_roundf((curr_tetro.blocks[i].y - 1) / GRID_SIZE) : (curr_tetro.blocks[i].y - 1) / GRID_SIZE;
+        float extra = (float) (fall_speed + GRID_SIZE - 1) / GRID_SIZE;
+        float col = ((curr_tetro.blocks[i].x - 1) / GRID_SIZE) - TetrisG::AREA_COL_LOWERB;
 
         if (!add_to_area && (add_to_area = row + extra >= GRID_ROWS || area[(int) (row + extra)][(int) col])) {
-            for (int rev_i = i - 1; rev_i >= 0; rev_i--) {
-                int rev_row = (curr_tetro->blocks[rev_i].y - 1) / GRID_SIZE;
-                int rev_col = ((curr_tetro->blocks[rev_i].x - 1) / GRID_SIZE) - TetrisG::AREA_COL_LOWERB;
+            for (int rev_i = i; rev_i >= 0; rev_i--) {
+                int rev_row = commit ? SDL_roundf((curr_tetro.blocks[rev_i].y - 1) / GRID_SIZE) : (curr_tetro.blocks[rev_i].y - 1) / GRID_SIZE;
+                int rev_col = ((curr_tetro.blocks[rev_i].x - 1) / GRID_SIZE) - TetrisG::AREA_COL_LOWERB;
                 
                 area[rev_row][rev_col] = 1;
                 if (top_high > rev_row)
@@ -255,6 +286,7 @@ static bool tetro_move_vert(Tetromino *curr_tetro, int (&area)[GRID_ROWS][Tetris
                     full_row[rev_i] = rev_row;
                 }
             }
+            continue;
         }
 
         if (add_to_area){
@@ -267,58 +299,107 @@ static bool tetro_move_vert(Tetromino *curr_tetro, int (&area)[GRID_ROWS][Tetris
             }
             
         } else 
-            curr_tetro->blocks[i].y += Tetromino::FALL_SPEED;
+            curr_tetro.blocks[i].y += fall_speed;
     }
 
     drop_area_content_one_line(area, top_high, full_row);
     return add_to_area;
 }
 
-static void rotate_tetro(Tetromino *tetro, const bool &clockwise) {
-    if (tetro->shape == TetrisG::TetroShape::O_SHAPE)
+static void rotate_tetro(Tetromino &tetro, const bool &clockwise, const int (&area)[GRID_ROWS][TetrisG::AREA_COLS]) {
+    if (tetro.shape == TetrisG::TetroShape::O_SHAPE)
         return;
 
-    float minx, maxx;
+    float minx, maxx, distanceX, distanceY;
+    Tetromino temp = tetro;
+    int row, col, k;
     minx = SDL_MAX_SINT16;
     maxx = 0;
     for (int i = 0; i < Tetromino::nb_blocks; i++) {
-        if (i == tetro->anchor_pos) {
-            check_minmax_horz(tetro, i, minx, maxx);
+        if (i == temp.anchor_pos) {
+            check_minmax_horz(temp, i, minx, maxx);
             continue;
         }
         
-        float distanceX = tetro->blocks[i].x - tetro->blocks[tetro->anchor_pos].x;
-        float distanceY = tetro->blocks[i].y - tetro->blocks[tetro->anchor_pos].y;
-        int k = clockwise ? 1 : -1;
-        tetro->blocks[i].x = tetro->blocks[tetro->anchor_pos].x - (distanceY * k);
-        tetro->blocks[i].y = tetro->blocks[tetro->anchor_pos].y + (distanceX * k);
-        check_minmax_horz(tetro, i, minx, maxx);
+        distanceX = temp.blocks[i].x - temp.blocks[temp.anchor_pos].x;
+        distanceY = temp.blocks[i].y - temp.blocks[temp.anchor_pos].y;
+        k = clockwise ? 1 : -1;
+        temp.blocks[i].x = temp.blocks[temp.anchor_pos].x - (distanceY * k);
+        temp.blocks[i].y = temp.blocks[temp.anchor_pos].y + (distanceX * k);
+        col = (temp.blocks[i].x - 1) / GRID_SIZE - TetrisG::AREA_COL_LOWERB;
+        row = (temp.blocks[i].y - 1) / GRID_SIZE;
+        if (area[row][col])
+            return;
+
+        check_minmax_horz(temp, i, minx, maxx);
     }
 
-    if (tetro->blocks[tetro->minx_pos].x <= TetrisG::AREA_COL_LOWERB * GRID_SIZE)
-        correct_horz_position_after_rotate(tetro, true);
-    else if (tetro->blocks[tetro->maxx_pos].x >= (TetrisG::AREA_COLS + TetrisG::AREA_COL_LOWERB) * GRID_SIZE)
-        correct_horz_position_after_rotate(tetro, false);
+    if (correct_horz_position_after_rotate(temp, area))
+        tetro = temp;
+}
 
+Tetromino::Tetromino(Tetromino &&other) noexcept {
+    for (int i = 0; i < Tetromino::nb_blocks; i++) {
+        this->blocks[i] = other.blocks[i];
+        other.blocks[i] = {0, 0};
+    }
+
+    this->shape = other.shape;
+    this->horz_off = other.horz_off;
+    this->anchor_pos = other.anchor_pos;
+    this->color = other.color;
+    this->minx_pos = other.minx_pos;
+    this->maxx_pos = other.maxx_pos;
+
+    other.shape = TetrisG::TetroShape::NONE_SHAPE;
+    other.horz_off = 0;
+    other.anchor_pos = 0;
+    other.color = ColorRGB::BLACK;
+    other.minx_pos = 0;
+    other.maxx_pos = 0;    
+}   
+
+Tetromino &Tetromino::operator=(Tetromino &&other) noexcept {
+    if (this != &other) {
+        for (int i = 0; i < Tetromino::nb_blocks; i++) {
+            this->blocks[i] = other.blocks[i];
+            other.blocks[i] = {0, 0};
+        }
+
+        this->shape = other.shape;
+        this->horz_off = other.horz_off;
+        this->anchor_pos = other.anchor_pos;
+        this->color = other.color;
+        this->minx_pos = other.minx_pos;
+        this->maxx_pos = other.maxx_pos;
+
+        other.shape = TetrisG::TetroShape::NONE_SHAPE;
+        other.horz_off = 0;
+        other.anchor_pos = 0;
+        other.color = ColorRGB::BLACK;
+        other.minx_pos = 0;
+        other.maxx_pos = 0;    
+    }
+    return *this;
 }
 
 TetrisG::TetrisG() : Game() {
+    top_high = GRID_ROWS - 10;
     for (int r = 0; r < GRID_ROWS; r++) {
         for (int q = 0; q < AREA_COLS; q++) {
-            area[r][q] = 0;
+            if (r >= top_high && (q < 5 || q > 10)) 
+                area[r][q] = 1;
+            else
+                area[r][q] = 0;
         }
     }
-    top_high = GRID_ROWS - 1;
-    curr_tetro = nullptr;
+    set_tetro_default(curr_tetro);
+    set_tetro_default(next_tetro);
+    commit_drop = false;
 }
 
 void TetrisG::update() {
-    fill_block_queue();
-
-    if (!curr_tetro) {
-        curr_tetro = &tetros_qu.front();
-        curr_tetro->horz_off = 0;
-    }
+    create_random_tetro();
     move_curr_tetro();
 }
 
@@ -343,12 +424,10 @@ void TetrisG::render(SDL_Renderer *renderer) {
     rect.w = GRID_SIZE - 1;
     rect.h = GRID_SIZE - 1;
     add_boundry_cols(renderer);
-    if (curr_tetro) {
-        for (int i = 0; i < Tetromino::nb_blocks; i++) {
-            rect.x = curr_tetro->blocks[i].x;
-            rect.y = curr_tetro->blocks[i].y;
-            tetro_rects.push_back(rect);
-        }
+    for (int i = 0; i < Tetromino::nb_blocks; i++) {
+        rect.x = curr_tetro.blocks[i].x;
+        rect.y = curr_tetro.blocks[i].y;
+        tetro_rects.push_back(rect);
     }
 
     for (int r = GRID_ROWS - 1; r >= top_high; r--) {
@@ -370,68 +449,80 @@ void TetrisG::render(SDL_Renderer *renderer) {
 }
 
 void TetrisG::move_curr_tetro() {
-    if (!curr_tetro)
-        return;
-
-    if (curr_tetro->horz_off)
-        tetro_move_horz(curr_tetro);
+    if (curr_tetro.horz_off && !commit_drop)
+        tetro_move_horz(curr_tetro, area);
     
-    if (tetro_move_vert(curr_tetro, area, top_high)) {
-        curr_tetro = nullptr;
-        tetros_qu.pop();
+    if (tetro_move_vert(curr_tetro, area, top_high, commit_drop)) {
+        curr_tetro = std::move(next_tetro);
+        commit_drop = false;
     }
 }
 
-void TetrisG::restart() {}
-
-void TetrisG::on_keydown(const SDL_Keycode &code) {
-    if (!curr_tetro)
-        return;
-
-    switch (code){
-    case SDLK_LEFT:
-        if (!curr_tetro->horz_off)
-            curr_tetro->horz_off = -GRID_SIZE;
-        break;
-    case SDLK_RIGHT:
-        if (!curr_tetro->horz_off)
-            curr_tetro->horz_off = GRID_SIZE;
-        break;
-    case SDLK_UP:
-        rotate_tetro(curr_tetro, false);
-        break;
-    case SDLK_DOWN:
-        rotate_tetro(curr_tetro, true);
-        break;
-    }
-}
-
-void TetrisG::fill_block_queue() {
-    while (tetros_qu.size() < 1) {
-        int shape = 0;
-        shape = SDL_rand(7) + 1;
-        switch (shape) {
-        case TetroShape::I_SHAPE:
-            create_I_shape_block(tetros_qu);
-            break;
-        case TetroShape::O_SHAPE:
-            create_O_shape_block(tetros_qu);
-            break;
-        case TetroShape::S_SHAPE:
-            create_S_shape_block(tetros_qu);
-            break;
-        case TetroShape::Z_SHAPE:
-            create_Z_shape_block(tetros_qu);
-            break;
-        case TetroShape::L_SHAPE:
-            create_L_shape_block(tetros_qu);
-            break;
-        case TetroShape::J_SHAPE:
-            create_J_shape_block(tetros_qu);
-            break;
-        case TetroShape::T_SHAPE:
-            create_T_shape_block(tetros_qu);
-            break;    
+void TetrisG::restart() {
+    for (int r = GRID_ROWS - 1; r >= top_high; r--) {
+        for (int q = 0; q < AREA_COLS; q++) {
+            area[r][q] = 0;
         }
     }
+    set_tetro_default(curr_tetro);
+    set_tetro_default(next_tetro);
+}
+
+void TetrisG::on_keydown(const SDL_Keycode &code) {
+    switch (code){
+    case SDLK_LEFT:
+        if (!curr_tetro.horz_off)
+            curr_tetro.horz_off = -GRID_SIZE;
+        break;
+    case SDLK_RIGHT:
+        if (!curr_tetro.horz_off)
+            curr_tetro.horz_off = GRID_SIZE;
+        break;
+    case SDLK_UP:
+        if (!commit_drop)
+            rotate_tetro(curr_tetro, false, area);
+
+        break;
+    case SDLK_DOWN:
+        if (!commit_drop)
+            rotate_tetro(curr_tetro, true, area);
+    
+        break;
+    case SDLK_SPACE:
+        commit_drop = true;
+        break;
+    }
+}
+
+void TetrisG::create_random_tetro() {
+    if (next_tetro.shape)
+        return;
+
+    next_tetro.shape = SDL_rand(7) + 1;
+    switch (next_tetro.shape) {
+    case TetroShape::I_SHAPE:
+        create_I_shape_block(next_tetro);
+        break;
+    case TetroShape::O_SHAPE:
+        create_O_shape_block(next_tetro);
+        break;
+    case TetroShape::S_SHAPE:
+        create_S_shape_block(next_tetro);
+        break;
+    case TetroShape::Z_SHAPE:
+        create_Z_shape_block(next_tetro);
+        break;
+    case TetroShape::L_SHAPE:
+        create_L_shape_block(next_tetro);
+        break;
+    case TetroShape::J_SHAPE:
+        create_J_shape_block(next_tetro);
+        break;
+    case TetroShape::T_SHAPE:
+        create_T_shape_block(next_tetro);
+        break;    
+    }
+
+    if (!curr_tetro.shape)
+        curr_tetro = std::move(next_tetro);
 }

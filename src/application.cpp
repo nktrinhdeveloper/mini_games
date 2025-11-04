@@ -141,7 +141,7 @@ void Application::handle_key_event(const SDL_Event &evt) {
         running = false;
         SDL_HideWindow(window);
         break;
-    case SDLK_SPACE:
+    case SDLK_R:
         game->restart();
         break;
     default:

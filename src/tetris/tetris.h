@@ -14,6 +14,12 @@ typedef struct Tetromino {
     SDL_FColor  color;
     int         minx_pos;
     int         maxx_pos;
+        Tetromino() = default;
+        ~Tetromino() = default;
+        Tetromino(const Tetromino &other) = default;
+        Tetromino &operator=(const Tetromino &other) = default;
+        Tetromino(Tetromino &&other) noexcept;
+        Tetromino &operator=(Tetromino &&other) noexcept;
 } Tetromino;
 
 class TetrisG : public Game {
@@ -39,10 +45,11 @@ class TetrisG : public Game {
     private:
         int         area[GRID_ROWS][AREA_COLS];
         int         top_high;
-        Tetromino   *curr_tetro;
-        std::queue<Tetromino> tetros_qu;
+        bool        commit_drop;
+        Tetromino   curr_tetro;
+        Tetromino   next_tetro;
         
-        void fill_block_queue();
+        void create_random_tetro();
         void move_curr_tetro();
 };
 
