@@ -1,21 +1,25 @@
 #include "application.h"
 
 Application::Application() {
-    window = nullptr;
-    renderer = nullptr;
-    running = false;
-    game = nullptr;
-    game_code = MiniGame::NO_GAME;
+    window      = nullptr;
+    renderer    = nullptr;
+    running     = false;
+    game        = nullptr;
+    game_code   = MiniGame::NO_GAME;
+    aud_stream  = nullptr;
 }
 
 bool Application::init(const std::string &dir) {
     if (!(window = SDL_CreateWindow("MiniGame", GRID_SIZE * GRID_COLS, GRID_SIZE * GRID_ROWS, SDL_WINDOW_HIDDEN))) {
-        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to create window\nError: ", SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to create window\nError: %s\n", SDL_GetError());
         return false;
     } else if (!(renderer = SDL_CreateRenderer(window, nullptr))) {
-        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to create renderer\nError: ", SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to create renderer\nError: %s\n", SDL_GetError());
         return false;
+    } else if (!(aud_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &AUD_SPEC_WAV, nullptr, nullptr))) {
+        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to open device stream\nError: %s\n", SDL_GetError());
     }
+
     running_dir = dir;
     return true;
 }
@@ -30,6 +34,10 @@ void Application::start(const MiniGame &code) {
     mainloop();
     free_ptr(&game);
     game_code = MiniGame::NO_GAME;
+    if (aud_stream) {
+        SDL_ClearAudioStream(aud_stream);
+        SDL_PauseAudioStreamDevice(aud_stream);
+    }
 }
 
 void Application::create_game(const MiniGame &code) {
@@ -50,6 +58,11 @@ void Application::create_game(const MiniGame &code) {
 
     if (game && !game->init(renderer, running_dir))
         running = false;
+
+    if (aud_stream) {
+        game->set_audio_stream(aud_stream);
+        SDL_ResumeAudioStreamDevice(aud_stream);
+    }
 }
     
 void Application::close() {
@@ -57,11 +70,14 @@ void Application::close() {
         SDL_DestroyWindow(window);
     if (renderer)
         SDL_DestroyRenderer(renderer);
+    if (aud_stream)
+        SDL_DestroyAudioStream(aud_stream);
 
     free_ptr(&game);
     
     window = nullptr;
     renderer = nullptr;
+    aud_stream = nullptr;
     SDL_Quit();
 }
 

@@ -24,7 +24,7 @@ int main(int args, char *argc[]) {
         return EXIT_FAILURE;
     }
 
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
         SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "failed to init sdl\nError: %s\n", SDL_GetError());
         return EXIT_FAILURE;
     } else if (!TTF_Init()) {

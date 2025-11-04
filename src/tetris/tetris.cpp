@@ -393,6 +393,27 @@ TetrisG::TetrisG() : Game() {
     set_tetro_default(curr_tetro);
     set_tetro_default(next_tetro);
     commit_drop = false;
+    audio_path.insert({
+        {TetrisAudio::FLYING, OBJ_FLYING_SOUND},
+        {TetrisAudio::HIT, HIT_SOUND}
+    });
+}
+
+bool TetrisG::init(SDL_Renderer *renderer, const std::string &running_dir) {
+    audios.resize(audio_path.size());
+    for (const std::pair<TetrisAudio, std::string> &path_p : audio_path) {
+        std::string path = running_dir + "/" + path_p.second;
+        if (!SDL_LoadWAV(path.c_str(), &audios[path_p.first].spec, &audios[path_p.first].buffer, &audios[path_p.first].length)) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "failed to load sound: %s\nError:%s\n", path_p.second, SDL_GetError());
+            audios[path_p.first].set_default();
+            continue;
+        } else if (audios[path_p.first].spec.format != AUD_SPEC_WAV.format) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "does not support audio: %d format\n", audios[path_p.first].spec.format);
+            audios[path_p.first].set_default();
+            continue;
+        }
+    }
+    return true;
 }
 
 void TetrisG::update() {
@@ -461,6 +482,7 @@ void TetrisG::move_curr_tetro() {
     if (tetro_move_vert(curr_tetro, area, top_high, commit_drop)) {
         curr_tetro = std::move(next_tetro);
         commit_drop = false;
+        play_audio(TetrisAudio::HIT);
     }
 }
 
@@ -496,6 +518,7 @@ void TetrisG::on_keydown(const SDL_Keycode &code) {
         break;
     case SDLK_SPACE:
         commit_drop = true;
+        play_audio(TetrisAudio::FLYING);
         break;
     }
 }

@@ -38,11 +38,17 @@ class TetrisG : public Game {
         static const int    AREA_COLS{24};
         TetrisG();
         ~TetrisG() override = default;
+        bool init(SDL_Renderer *renderer, const std::string &running_dir) override;
         void update() override;
         void render(SDL_Renderer *renderer) override;
         void restart() override;
         void on_keydown(const SDL_Keycode &code) override;
     private:
+        enum TetrisAudio {
+            FLYING,
+            HIT
+        };
+        std::map<TetrisAudio, std::string> audio_path;
         int         area[GRID_ROWS][AREA_COLS];
         int         top_high;
         bool        commit_drop;

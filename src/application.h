@@ -20,7 +20,8 @@ class Application {
         bool            running;
         Game            *game;
         int             game_code;
-        std::string running_dir;
+        std::string     running_dir;
+        SDL_AudioStream *aud_stream;
 
         void event_listening();
         void mainloop();
