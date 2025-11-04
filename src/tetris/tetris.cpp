@@ -384,12 +384,9 @@ Tetromino &Tetromino::operator=(Tetromino &&other) noexcept {
 }
 
 TetrisG::TetrisG() : Game() {
-    top_high = GRID_ROWS - 10;
+    top_high = GRID_ROWS - 1;
     for (int r = 0; r < GRID_ROWS; r++) {
         for (int q = 0; q < AREA_COLS; q++) {
-            if (r >= top_high && (q < 5 || q > 10)) 
-                area[r][q] = 1;
-            else
                 area[r][q] = 0;
         }
     }
