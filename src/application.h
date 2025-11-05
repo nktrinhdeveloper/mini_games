@@ -4,19 +4,22 @@
 #include "snake/snake.h"
 #include "minesweeper/minesweeper.h"
 #include "tetris/tetris.h"
+#include "flappybird/flappybird.h"
 
 typedef enum MiniGame {
     QUIT,
     NO_GAME,
     SNAKE,
     MINESWEEPER,
-    TETRIS
+    TETRIS,
+    FLAPPY
 } MiniGame;
 
 class Application {
     private:
         SDL_Window      *window;
         SDL_Renderer    *renderer;
+        Clock           clock;
         bool            running;
         Game            *game;
         int             game_code;

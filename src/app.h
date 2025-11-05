@@ -25,6 +25,32 @@ void free_arr_ptr(T **ptr) {
     }
 }
 
+class Clock {
+    private:
+        Uint64 last_ticks;
+        Uint32 tpf;
+    public:
+        static const Uint32 DEFAULT_TPF{16};
+            Clock() = default;
+            ~Clock() = default;
+            Clock(const Clock &other) = delete;
+            Clock(Clock &&other) noexcept = delete;
+            Clock &operator=(const Clock &other) = delete;
+            Clock &operator=(Clock &&other) noexcept = delete;
+        void start_clock() {
+            last_ticks = SDL_GetTicks();
+            tpf = 0;
+        }
+        void ticking() {
+            Uint64 now = SDL_GetTicks();
+            tpf = now - last_ticks;
+            last_ticks = now;
+            if (tpf < Clock::DEFAULT_TPF)
+                SDL_Delay(Clock::DEFAULT_TPF - tpf);
+        }
+        const Uint32 &get_tpf() const {return tpf;}
+};
+
 typedef struct AudioData {
     SDL_AudioSpec   spec;
     Uint8           *buffer;
@@ -39,9 +65,16 @@ typedef struct AudioData {
     }
 } AudioData;
 
+template <typename T>
+using Vector3D = std::vector<std::vector<std::vector<T>>>;
+
+template <typename T>
+using Vector2D = std::vector<std::vector<T>>;
+
 class Game {
     protected:
-        SDL_AudioStream *aud_stream = nullptr;
+        SDL_AudioStream *aud_stream     = nullptr;
+        Clock           *clock          = nullptr;
         std::vector<AudioData> audios;
     public:
         Game() = default;
@@ -53,13 +86,14 @@ class Game {
         Game(Game &&other) noexcept = delete;
         Game &operator=(const Game &other) = delete;
         Game &operator=(Game &other) noexcept = delete;
-    virtual bool init(SDL_Renderer *renderer, const std::string &running_dir) {return true;}
             void set_audio_stream(SDL_AudioStream *aud_stream) {this->aud_stream = aud_stream;}
+            void set_clock(Clock *clock) {this->clock = clock;}
             void play_audio(const int &audio_idx) {
                 if (!aud_stream || audios.empty() || !audios[audio_idx].buffer)
                     return;
                 SDL_PutAudioStreamData(aud_stream, audios[audio_idx].buffer, audios[audio_idx].length);
             }
+    virtual bool init(SDL_Renderer *renderer, const std::string &running_dir) {return true;}
     virtual void update() {}
     virtual void render(SDL_Renderer *renderer) {}
     virtual void restart() {}

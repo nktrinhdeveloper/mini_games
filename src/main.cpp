@@ -9,6 +9,7 @@ const struct CmdMap {
     {MiniGame::SNAKE, "snake"},
     {MiniGame::MINESWEEPER, "minesweeper"},
     {MiniGame::TETRIS, "tetris"},
+    {MiniGame::FLAPPY, "flappy"},
     {MiniGame::QUIT, "quit"}
 };
 

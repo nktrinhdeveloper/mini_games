@@ -21,6 +21,7 @@ bool Application::init(const std::string &dir) {
     }
 
     running_dir = dir;
+    clock.start_clock();
     return true;
 }
 
@@ -52,17 +53,21 @@ void Application::create_game(const MiniGame &code) {
         case MiniGame::TETRIS:
             game = new TetrisG();
             break;
+        case MiniGame::FLAPPY:
+            game = new FlappyBird();
+            break;
         default:
             running = false;
+            return;
     }
-
-    if (game && !game->init(renderer, running_dir))
-        running = false;
 
     if (aud_stream) {
         game->set_audio_stream(aud_stream);
         SDL_ResumeAudioStreamDevice(aud_stream);
     }
+    game->set_clock(&clock);
+    if (!game->init(renderer, running_dir))
+        running = false;
 }
     
 void Application::close() {
@@ -100,8 +105,6 @@ void Application::show_grid(SDL_Renderer *renderer) {
 }
 
 void Application::mainloop() {
-    Uint64 now, tpf;
-    Uint64 last_ticks = SDL_GetTicks();
     SDL_ShowWindow(window);
     SDL_RaiseWindow(window);
     while (running) {
@@ -117,11 +120,7 @@ void Application::mainloop() {
         game->render(renderer);
         SDL_RenderPresent(renderer);
 
-        now = SDL_GetTicks();
-        tpf = now - last_ticks;
-        last_ticks = now;
-        if (tpf < 1000 / 60)
-            SDL_Delay((1000/60) - tpf);
+        clock.ticking();
     }
 }
 
