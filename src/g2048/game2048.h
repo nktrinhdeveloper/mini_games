@@ -3,14 +3,42 @@
 
 #include "app.h"
 
-class Game2048 : public Game {
-    public:
-    ~Game2048() override = default;
-    bool init(SDL_Renderer *renderer, const std::string &running_dir) override {return true;}
-    void update() override {}
-    void render(SDL_Renderer *renderer) override {}
-    void restart() override {}
-    void on_keydown(const SDL_Keycode &code) override {}
+class MergeTileG : public Game {
+public:
+    typedef struct Tile {
+        SDL_FPoint  loc;
+        int         val;
+        TTF_Text    *ttf_txt;
+        SDL_FPoint  txt_loc;
+        bool        moved;
+            Tile();
+            ~Tile();
+            Tile(const Tile &other) = default;
+            Tile &operator=(const Tile &other) = default;
+            Tile(Tile &&other) noexcept;
+            Tile &operator=(Tile &&other) noexcept;
+        void reset_tile();
+    } Button;
+
+    static const int WIND_WIDTH{450};
+    static const int WIND_HEIGHT{450};
+    static const int BORDER_THICK{10};
+    static const int TILE_SIZE{100};
+    static const int SPEED{2};
+
+    ~MergeTileG() override;
+    bool init(SDL_Renderer *renderer, const std::string &running_dir);
+    void update() override;
+    void render(SDL_Renderer *renderer) override;
+    void restart() override;
+    void on_keydown(const SDL_Keycode &code) override;
+private:
+    TTF_TextEngine  *text_engine;
+    TTF_Font        *font;
+    Vector2D<MergeTileG::Tile> tiles;
+    SDL_Point       direction;
+
+    void move_and_merge_tile();
 };
 
 #endif
