@@ -116,7 +116,7 @@ MergeTileG::~MergeTileG() {
 }
 
 bool MergeTileG::init(SDL_Renderer *renderer, const std::string &running_dir) {
-    std::string font_dir = running_dir + "/" + WICKED_MOUSE_FONT;
+    std::string font_dir = running_dir + "/" + AppConst::WICKED_MOUSE_FONT;
     if (!(font = TTF_OpenFont(font_dir.c_str(), 28))) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "failed to open font\nError: %s\n", SDL_GetError());
         return false;

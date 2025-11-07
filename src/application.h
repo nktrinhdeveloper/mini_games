@@ -5,6 +5,8 @@
 #include "minesweeper/minesweeper.h"
 #include "tetris/tetris.h"
 #include "flappybird/flappybird.h"
+#include "g2048/game2048.h"
+#include "matchthree/matchthree.h"
 
 typedef enum MiniGame {
     QUIT,
@@ -12,7 +14,9 @@ typedef enum MiniGame {
     SNAKE,
     MINESWEEPER,
     TETRIS,
-    FLAPPY
+    FLAPPY,
+    G2048,
+    MATCH3
 } MiniGame;
 
 class Application {
@@ -31,6 +35,7 @@ class Application {
         void create_game(const MiniGame &code);
         void show_grid(SDL_Renderer *renderer);
         void handle_key_event(const SDL_Event &evt);
+        void on_close_game();
     public:
             Application();
             ~Application() = default;

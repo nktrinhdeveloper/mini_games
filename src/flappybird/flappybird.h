@@ -23,7 +23,6 @@ class FlappyBird : public Game {
         int                     pipe_create_idx;
         int                     min_pipe_idx;
         float                   b_vert_velo;
-        bool                    alive;
 
         bool load_sound();
         void move_world();

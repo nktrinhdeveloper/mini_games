@@ -20,7 +20,6 @@ class SnakeG : public Game{
         SDL_Point   direction;
         SDL_Point   next_direction;
         SDL_FRect   prey;
-        bool        alive;
 
         std::vector<SDL_FRect> get_snake_render_rect() const;
         void controller();

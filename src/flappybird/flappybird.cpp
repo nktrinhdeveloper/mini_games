@@ -1,22 +1,22 @@
 #include "flappybird.h"
 namespace {
     void create_random_pipe(std::vector<SDL_FRect> &dst_vec, int &pipe_create_idx, const bool &init = false) {
-        const int area_free = GRID_ROWS - 4;
+        const int area_free = AppConst::GRID_ROWS - 4;
         const int distance = 12;
         const int gap = 6;
         int first_height = 0;
         int second_height = 0;
-        int locx = (GRID_COLS + 1) * GRID_SIZE;
+        int locx = (AppConst::GRID_COLS + 1) * AppConst::GRID_SIZE;
         if (!init){
-            locx = dst_vec[pipe_create_idx - 1].x + dst_vec[pipe_create_idx - 1].w + distance * GRID_SIZE;
+            locx = dst_vec[pipe_create_idx - 1].x + dst_vec[pipe_create_idx - 1].w + distance * AppConst::GRID_SIZE;
             if (pipe_create_idx == dst_vec.size())
                 pipe_create_idx = 2;
         }
 
         first_height = SDL_rand(area_free / 2);
         second_height = area_free - first_height - gap;
-        dst_vec[pipe_create_idx++] = {(float) locx, (float) GRID_SIZE * 2, (float) 3 * GRID_SIZE, (float) first_height * GRID_SIZE};
-        dst_vec[pipe_create_idx++] = {(float) locx, (float) (first_height + gap + 2) * GRID_SIZE, (float) 3 * GRID_SIZE, (float) second_height * GRID_SIZE};
+        dst_vec[pipe_create_idx++] = {(float) locx, (float) AppConst::GRID_SIZE * 2, (float) 3 * AppConst::GRID_SIZE, (float) first_height * AppConst::GRID_SIZE};
+        dst_vec[pipe_create_idx++] = {(float) locx, (float) (first_height + gap + 2) * AppConst::GRID_SIZE, (float) 3 * AppConst::GRID_SIZE, (float) second_height * AppConst::GRID_SIZE};
     }
 };
 
@@ -24,8 +24,8 @@ namespace {
 bool FlappyBird::init(SDL_Renderer *renderer, const std::string &running_dir) {
     bool init = true;
     map.resize(8);
-    map[0] = {0, 0, GRID_SIZE * GRID_COLS, GRID_SIZE * 2};
-    map[1] = {0, (GRID_ROWS - 2) * GRID_SIZE, GRID_SIZE * GRID_COLS, GRID_SIZE * 2};
+    map[0] = {0, 0, AppConst::GRID_SIZE * AppConst::GRID_COLS, AppConst::GRID_SIZE * 2};
+    map[1] = {0, (AppConst::GRID_ROWS - 2) * AppConst::GRID_SIZE, AppConst::GRID_SIZE * AppConst::GRID_COLS, AppConst::GRID_SIZE * 2};
     pipe_create_idx = 2;
     min_pipe_idx = 2;
     while (pipe_create_idx < map.size()) {
@@ -33,15 +33,14 @@ bool FlappyBird::init(SDL_Renderer *renderer, const std::string &running_dir) {
         init = false;
     }
 
-    bird.x = (GRID_COLS / 2) * GRID_SIZE;
-    bird.y = (3) * GRID_SIZE;
-    bird.w = GRID_SIZE;
-    bird.h = GRID_SIZE;
+    bird.x = (AppConst::GRID_COLS / 2) * AppConst::GRID_SIZE;
+    bird.y = (3) * AppConst::GRID_SIZE;
+    bird.w = AppConst::GRID_SIZE;
+    bird.h = AppConst::GRID_SIZE;
     b_vert_velo = 0;
-    alive = true;
 
     std::map<int, std::string> sounds_dir = {
-        {FlappySound::FLAP, running_dir + "/" + HIT_SOUND}
+        {FlappySound::FLAP, running_dir + "/" + AppConst::HIT_SOUND}
     };
     audios.resize(sounds_dir.size());
     for (const std::pair<int, std::string> pair : sounds_dir) {
@@ -99,8 +98,8 @@ void FlappyBird::restart() {
         init = false;
     }
 
-    bird.x = (GRID_COLS / 2) * GRID_SIZE;
-    bird.y = (3) * GRID_SIZE;
+    bird.x = (AppConst::GRID_COLS / 2) * AppConst::GRID_SIZE;
+    bird.y = (3) * AppConst::GRID_SIZE;
     b_vert_velo = 0;
     alive = true;
 }

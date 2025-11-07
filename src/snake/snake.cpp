@@ -44,12 +44,11 @@ static bool has_intersect_snake(const SDL_FPoint &p1, const std::vector<SDL_FRec
 }
 
 bool SnakeG::init(SDL_Renderer *renderer, const std::string &running_dir) {
-    alive = true;
     direction = {1, 0};
     next_direction = direction;
     snake.resize(2);
-    snake.at(0) = {(float)(5 * GRID_SIZE) + 1, (float)(5 * GRID_SIZE) + 1, (float)GRID_SIZE - 1, (float)GRID_SIZE - 1};
-    snake.at(1) = {(float)(3 * GRID_SIZE) + 1, (float)(5 * GRID_SIZE) + 1, (float)GRID_SIZE - 1, (float)GRID_SIZE - 1};
+    snake.at(0) = {(float)(5 * AppConst::GRID_SIZE) + 1, (float)(5 * AppConst::GRID_SIZE) + 1, (float)AppConst::GRID_SIZE - 1, (float)AppConst::GRID_SIZE - 1};
+    snake.at(1) = {(float)(3 * AppConst::GRID_SIZE) + 1, (float)(5 * AppConst::GRID_SIZE) + 1, (float)AppConst::GRID_SIZE - 1, (float)AppConst::GRID_SIZE - 1};
     create_random_prey();
     return true;
 }
@@ -61,9 +60,9 @@ void SnakeG::create_random_prey() {
     SDL_FRect rect;
     while (regen) {
         regen = false;
-        x = SDL_rand(GRID_COLS);
-        y = SDL_rand(GRID_ROWS);
-        prey = {(float)(GRID_SIZE * x) + 5, (float)(GRID_SIZE * y) + 5, (float)(GRID_SIZE - 10), (float)(GRID_SIZE - 10)};
+        x = SDL_rand(AppConst::GRID_COLS);
+        y = SDL_rand(AppConst::GRID_ROWS);
+        prey = {(float)(AppConst::GRID_SIZE * x) + 5, (float)(AppConst::GRID_SIZE * y) + 5, (float)(AppConst::GRID_SIZE - 10), (float)(AppConst::GRID_SIZE - 10)};
         regen = has_intersect_snake(prey, snake);
     }    
 }
@@ -73,8 +72,8 @@ void SnakeG::restart() {
     direction = {1, 0};
     next_direction = direction;
     snake.resize(2);
-    snake.at(0) = {(float)(5 * GRID_SIZE) + 1, (float)(5 * GRID_SIZE) + 1, (float)GRID_SIZE - 1, (float)GRID_SIZE - 1};
-    snake.at(1) = {(float)(3 * GRID_SIZE) + 1, (float)(5 * GRID_SIZE) + 1, (float)GRID_SIZE - 1, (float)GRID_SIZE - 1};
+    snake.at(0) = {(float)(5 * AppConst::GRID_SIZE) + 1, (float)(5 * AppConst::GRID_SIZE) + 1, (float)AppConst::GRID_SIZE - 1, (float)AppConst::GRID_SIZE - 1};
+    snake.at(1) = {(float)(3 * AppConst::GRID_SIZE) + 1, (float)(5 * AppConst::GRID_SIZE) + 1, (float)AppConst::GRID_SIZE - 1, (float)AppConst::GRID_SIZE - 1};
     create_random_prey();
 }
 
@@ -106,12 +105,12 @@ void SnakeG::controller() {
 void SnakeG::change_direction() {
     float x, y;
     // snakex = (x * GRID_SIZE) + 1, snakey = (y * GRID_SIZE) + 1
-    x = (snake[0].x - 1) / GRID_SIZE;
-    y = (snake[0].y - 1) / GRID_SIZE;
+    x = (snake[0].x - 1) / AppConst::GRID_SIZE;
+    y = (snake[0].y - 1) / AppConst::GRID_SIZE;
     if (SDL_fmodf(x, 1) == 0 && SDL_fmodf(y, 1) == 0) {
         direction = next_direction;
-        snake[0].x = (x * GRID_SIZE) + 1;
-        snake[0].y = (y * GRID_SIZE) + 1;
+        snake[0].x = (x * AppConst::GRID_SIZE) + 1;
+        snake[0].y = (y * AppConst::GRID_SIZE) + 1;
         snake.insert(snake.begin() + 1, snake[0]);
     }
 }
@@ -160,7 +159,7 @@ int SnakeG::check_collision(const bool &horz, const bool &pos) {
     SDL_FPoint a;
     if (horz && pos) {
         a = {snake[0].x + snake[0].w, snake[0].y + (snake[0].h / 2)};
-        if (a.x > GRID_SIZE * GRID_COLS || has_intersect_snake(a, snake))
+        if (a.x > AppConst::GRID_SIZE * AppConst::GRID_COLS || has_intersect_snake(a, snake))
             return DEAD;
     } else if (horz && !pos) {
         a = {snake[0].x, snake[0].y + (snake[0].h / 2)};
@@ -168,7 +167,7 @@ int SnakeG::check_collision(const bool &horz, const bool &pos) {
             return DEAD;
     } else if (!horz && pos) {
         a = {snake[0].x + (snake[0].w / 2), snake[0].y + snake[0].h};
-        if (a.y > GRID_SIZE * GRID_ROWS || has_intersect_snake(a, snake))
+        if (a.y > AppConst::GRID_SIZE * AppConst::GRID_ROWS || has_intersect_snake(a, snake))
             return DEAD;
     } else if (!horz && !pos) {
         a = {snake[0].x + (snake[0].w / 2), snake[0].y};
@@ -182,13 +181,13 @@ int SnakeG::check_collision(const bool &horz, const bool &pos) {
 void SnakeG::add_tail(const bool &horz, const bool &pos) {
     SDL_FRect *tail = &snake[snake.size() - 1];
     if (horz && pos) {
-        tail->x -= GRID_SIZE;
+        tail->x -= AppConst::GRID_SIZE;
     } else if (horz && !pos) {
-        tail->x += GRID_SIZE;
+        tail->x += AppConst::GRID_SIZE;
     } else if (!horz && pos) {
-        tail->y -= GRID_SIZE;
+        tail->y -= AppConst::GRID_SIZE;
     } else if (!horz && pos) {
-        tail->y += GRID_SIZE;
+        tail->y += AppConst::GRID_SIZE;
     }
 }
 

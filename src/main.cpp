@@ -6,10 +6,7 @@ const struct CmdMap {
     int         cmd_code;
     std::string cmd;
 } cmd_map[] {
-    {MiniGame::SNAKE, "snake"},
-    {MiniGame::MINESWEEPER, "minesweeper"},
-    {MiniGame::TETRIS, "tetris"},
-    {MiniGame::FLAPPY, "flappy"},
+    {MiniGame::MATCH3, "match3"},
     {MiniGame::QUIT, "quit"}
 };
 
@@ -93,7 +90,7 @@ std::filesystem::path get_running_dir(const std::string &str) {
     std::filesystem::path path(str);
     while (path != path.root_path() || count != 50) {
         count++;
-        if (path.filename().string() != APP_DIR_NAME)
+        if (path.filename().string() != AppConst::APP_DIR_NAME)
             path = path.parent_path();
         else 
             return path;

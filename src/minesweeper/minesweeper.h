@@ -27,7 +27,7 @@ class MineSweeperG : public Game {
 
         TTF_Font        *font;
         TTF_TextEngine  *text_engine;
-        Button          btns[GRID_ROWS][GRID_COLS];
+        Button          btns[AppConst::GRID_ROWS][AppConst::GRID_COLS];
         SDL_Point       hover_btn;
         int             nb_safe;
 

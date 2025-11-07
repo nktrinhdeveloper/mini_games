@@ -49,7 +49,7 @@ class TetrisG : public Game {
             HIT
         };
         std::map<TetrisAudio, std::string> audio_path;
-        int         area[GRID_ROWS][AREA_COLS];
+        int         area[AppConst::GRID_ROWS][AREA_COLS];
         int         top_high;
         bool        commit_drop;
         Tetromino   curr_tetro;
