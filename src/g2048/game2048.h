@@ -10,7 +10,7 @@ public:
         int         val;
         TTF_Text    *ttf_txt;
         SDL_FPoint  txt_loc;
-        bool        moved;
+        bool        movable;
             Tile();
             ~Tile();
             Tile(const Tile &other) = default;
@@ -37,8 +37,10 @@ private:
     TTF_Font        *font;
     Vector2D<MergeTileG::Tile> tiles;
     SDL_Point       direction;
+    bool            need_add_tile;
 
-    void move_and_merge_tile();
+    bool move_and_merge_tile();
+    bool create_random_tile();
 };
 
 #endif

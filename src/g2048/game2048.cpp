@@ -32,20 +32,24 @@ namespace {
         }
     }
 
-    void update_tile(Vector2D<MergeTileG::Tile> &tiles, const int &r, const int &q) {
+    Tribool update_tile(Vector2D<MergeTileG::Tile> &tiles, const int &r, const int &q) {
         float update_r, update_q;
         update_q = (tiles[r][q].loc.x - MergeTileG::BORDER_THICK) / (MergeTileG::TILE_SIZE + MergeTileG::BORDER_THICK);
         update_r = (tiles[r][q].loc.y - MergeTileG::BORDER_THICK) / (MergeTileG::TILE_SIZE + MergeTileG::BORDER_THICK);
         if (!(SDL_abs(r - update_r) && SDL_fmodf(update_r, 1) < 0.1f) && !(SDL_abs(q - update_q) && SDL_fmodf(update_q, 1) < 0.1f)) {
-            return;
+            return Tribool::FAILED;
         }
 
         if (tiles[update_r][update_q].val) {
             tiles[update_r][update_q].val *= 2;
+            tiles[update_r][update_q].movable = false;
             set_tile_text(tiles[update_r][update_q]);
             tiles[r][q].reset_tile();
+            return Tribool::SUCCESSED;
         } else 
             tiles[update_r][update_q] = std::move(tiles[r][q]);
+
+        return Tribool::NORMAL;
     }
 }
 
@@ -54,7 +58,7 @@ MergeTileG::Tile::Tile() {
     val = 0;
     ttf_txt = nullptr;
     txt_loc = {0, 0};
-    moved = false;
+    movable = false;
 }
 
 MergeTileG::Tile::~Tile() {
@@ -67,13 +71,13 @@ MergeTileG::Tile::Tile(Tile &&other) noexcept {
     val = other.val;
     ttf_txt = other.ttf_txt;
     txt_loc = std::move(other.txt_loc);
-    moved = false;
+    movable = false;
 
     other.loc = {0, 0};
     other.val = 0;
     other.ttf_txt = nullptr;
     other.txt_loc = {0, 0};
-    moved = false;
+    other.movable = false;
 }
 
 MergeTileG::Tile &MergeTileG::Tile::operator=(Tile &&other) noexcept {
@@ -82,13 +86,13 @@ MergeTileG::Tile &MergeTileG::Tile::operator=(Tile &&other) noexcept {
         val = other.val;
         ttf_txt = other.ttf_txt;
         txt_loc = std::move(other.txt_loc);
-        moved = false;
+        movable = false;
 
         other.loc = {0, 0};
         other.val = 0;
         other.ttf_txt = nullptr;
         other.txt_loc = {0, 0};
-        moved = false;
+        other.movable = false;
     }
     return *this;
 }
@@ -100,7 +104,7 @@ void MergeTileG::Tile::reset_tile() {
         TTF_DestroyText(ttf_txt);
     ttf_txt = nullptr;
     txt_loc = {0, 0};
-    moved = false;
+    movable = false;
 }
 
 MergeTileG::~MergeTileG() {
@@ -124,68 +128,83 @@ bool MergeTileG::init(SDL_Renderer *renderer, const std::string &running_dir) {
     SDL_SetWindowSize(SDL_GetRenderWindow(renderer), MergeTileG::WIND_WIDTH, MergeTileG::WIND_HEIGHT);
     tiles = Vector2D<MergeTileG::Tile>(4, std::vector<MergeTileG::Tile>(4));
     for (int i = 0; i < 2; i++) {
-        int val = SDL_rand(10) == 0 ? 4 : 2;
-        int r, q;
-        bool valid_pos = false;
-        while (!valid_pos) {
-            r = SDL_rand(4);
-            q = SDL_rand(4);
-            valid_pos = !tiles[r][q].val;
-        }
-
-        tiles[r][q].loc.y = (float) ((r * (MergeTileG::TILE_SIZE + MergeTileG::BORDER_THICK)) + MergeTileG::BORDER_THICK);
-        tiles[r][q].loc.x = (float) ((q * (MergeTileG::TILE_SIZE + MergeTileG::BORDER_THICK)) + MergeTileG::BORDER_THICK);
-        tiles[r][q].val = val;
-        tiles[r][q].ttf_txt = TTF_CreateText(text_engine, font, "", 0);
-        set_tile_text(tiles[r][q]);
+        create_random_tile();
     }
 
     direction = {0, 0};
+    need_add_tile = false;
+    return true;
+}
+
+bool MergeTileG::create_random_tile() {
+    int val = SDL_rand(10) == 0 ? 4 : 2;
+    int r, q;
+    bool valid_pos = false;
+    int count = 0;
+    while (!valid_pos) {
+        if (count >= 16)
+            return false;
+        r = SDL_rand(4);
+        q = SDL_rand(4);
+        valid_pos = !tiles[r][q].val;
+        count++;
+    }
+
+    tiles[r][q].loc.y = (float) ((r * (MergeTileG::TILE_SIZE + MergeTileG::BORDER_THICK)) + MergeTileG::BORDER_THICK);
+    tiles[r][q].loc.x = (float) ((q * (MergeTileG::TILE_SIZE + MergeTileG::BORDER_THICK)) + MergeTileG::BORDER_THICK);
+    tiles[r][q].val = val;
+    tiles[r][q].ttf_txt = TTF_CreateText(text_engine, font, "", 0);
+    set_tile_text(tiles[r][q]);
     return true;
 }
 
 void MergeTileG::update() {
-    move_and_merge_tile();
-}
-
-void MergeTileG::move_and_merge_tile() {
-    if (!direction.x && !direction.y)
+    if (!alive)
         return;
 
+    if ((direction.x || direction.y) && move_and_merge_tile() && need_add_tile) {
+        alive = create_random_tile();
+        need_add_tile = false;
+    }
+}
+
+bool MergeTileG::move_and_merge_tile() {
     bool  moving = false;
+    bool need_create = false;
     int limit_r, begin_r, limit_q, begin_q, kr, kq;
     prepare_vars_for_loop(tiles, direction, begin_r, limit_r, kr, begin_q, limit_q, kq);
     for (int r = begin_r; r * kr < limit_r; r += kr) {
-        if (r + direction.y < 0 || r + direction.y >= tiles.size()) {
-            moving |= false;
+        if (r + direction.y < 0 || r + direction.y >= tiles.size())
             continue;
-        }
+        
 
         for (int q = begin_q; q * kq < limit_q; q += kq) {
             if (q + direction.x < 0 || q + direction.x >= tiles.size() || !tiles[r][q].val ||
-            (tiles[r + direction.y][q + direction.x].val && tiles[r][q].val != tiles[r + direction.y][q + direction.x].val)) {
-                moving |= false;
+                (tiles[r + direction.y][q + direction.x].val &&
+                tiles[r][q].val != tiles[r + direction.y][q + direction.x].val &&
+                !tiles[r + direction.y][q + direction.x].movable))
                 continue;
-            }
 
             moving |= true;
             if (direction.x) {
                 tiles[r][q].loc.x += direction.x * SPEED;
                 tiles[r][q].txt_loc.x += direction.x * SPEED;
-                tiles[r][q].moved = true;
+                tiles[r][q].movable = true;
             } else if (direction.y) {
                 tiles[r][q].loc.y += direction.y * SPEED;
                 tiles[r][q].txt_loc.y += direction.y * SPEED;
-                tiles[r][q].moved = true;
+                tiles[r][q].movable = true;
             }
 
             update_tile(tiles, r, q);
+            need_add_tile = true;
         }
     }
 
     if (!moving)
         direction = {0, 0};
-    
+
+    return !moving;
 }
 
 void MergeTileG::render(SDL_Renderer *renderer) {

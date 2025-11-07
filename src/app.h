@@ -25,6 +25,12 @@ void free_arr_ptr(T **ptr) {
     }
 }
 
+typedef enum Tribool {
+    FAILED = -1,
+    NORMAL = 0,
+    SUCCESSED = 1
+} Tribool;
+
 class Clock {
     private:
         Uint64 last_ticks;
@@ -73,11 +79,12 @@ using Vector2D = std::vector<std::vector<T>>;
 
 class Game {
     protected:
-        SDL_AudioStream *aud_stream     = nullptr;
-        Clock           *clock          = nullptr;
+        SDL_AudioStream *aud_stream;
+        Clock           *clock;
+        bool            alive;
         std::vector<AudioData> audios;
     public:
-        Game() = default;
+        Game() : aud_stream(nullptr), clock(nullptr), alive(true) {}
         virtual ~Game() {
             for (int i = 0; i < audios.size(); i++)
             audios[i].set_default();            
