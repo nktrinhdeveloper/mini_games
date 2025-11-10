@@ -44,8 +44,9 @@ class MineSweeperG : public Game {
         void update() override;
         void render(SDL_Renderer *renderer) override;
         void restart() override;
-        void on_hover(const int &mousex, const int &mousey);
-        void on_click(const int &mouse_button);
+        void on_mouse_motion(const int &mousex, const int &mousey) override;
+        void on_mouse_down(const int &mouse) override;
+
 };
 
 #endif

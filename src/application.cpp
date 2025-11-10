@@ -136,16 +136,13 @@ void Application::event_listening() {
             handle_key_event(evt);
             break;
         case SDL_EVENT_MOUSE_MOTION:
-            // if (game_code == MiniGame::MINESWEEPER) {
-            //     MineSweeperG *sweeper = dynamic_cast<MineSweeperG *>(game);
-            //     sweeper->on_hover(evt.button.x, evt.button.y);
-            // }
+            game->on_mouse_motion(evt.button.x, evt.button.y);
             break;
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
-            // if (game_code == MiniGame::MINESWEEPER) {
-            //     MineSweeperG *sweeper = dynamic_cast<MineSweeperG *>(game);
-            //     sweeper->on_click(evt.button.button);
-            // }            
+            game->on_mouse_down(evt.button.button);
+            break;
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+            game->on_mouse_up(evt.button.button);
             break;
         }
     }

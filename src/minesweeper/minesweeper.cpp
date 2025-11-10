@@ -106,7 +106,7 @@ void MineSweeperG::restart() {
     create_random_boom();
 }
 
-void MineSweeperG::on_hover(const int &mousex, const int &mousey) {
+void MineSweeperG::on_mouse_motion(const int &mousex, const int &mousey) {
     int r, q;
     q = (mousex - 1) / AppConst::GRID_SIZE;
     r = (mousey - 1) / AppConst::GRID_SIZE;
@@ -146,7 +146,7 @@ static void set_btn_display_text(Button &btn, const bool &end = false) {
         TTF_SetTextColorFloat(btn.text.text_obj, ColorRGB::BLACK.r, ColorRGB::BLACK.g, ColorRGB::BLACK.b, ColorRGB::BLACK.a);
 }
 
-void MineSweeperG::on_click(const int &mouse_button) {
+void MineSweeperG::on_mouse_down(const int &mouse_button) {
     if (hover_btn.y < 0 && hover_btn.x < 0) {
         return;
     }
