@@ -104,7 +104,7 @@ void FlappyBird::restart() {
     alive = true;
 }
         
-void FlappyBird::on_keydown(const SDL_Keycode &code) {
+void FlappyBird::on_keydown(const SDL_Keycode &code, const SDL_Keymod &mod) {
     switch (code){
     case SDLK_UP:
         b_vert_velo = -VERT_SPEED * 5;

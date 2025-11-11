@@ -34,7 +34,7 @@ class Application {
         void mainloop();
         void create_game(const MiniGame &code);
         void show_grid(SDL_Renderer *renderer);
-        void handle_key_event(const SDL_Event &evt);
+        void handle_key_event(const SDL_KeyboardEvent &keyboard_evt);
         void on_close_game();
     public:
             Application();

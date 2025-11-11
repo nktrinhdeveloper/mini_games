@@ -133,13 +133,13 @@ void Application::event_listening() {
             SDL_HideWindow(window);
             break;
         case SDL_EVENT_KEY_DOWN:
-            handle_key_event(evt);
+            handle_key_event(evt.key);
             break;
         case SDL_EVENT_MOUSE_MOTION:
             game->on_mouse_motion(evt.button.x, evt.button.y);
             break;
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
-            game->on_mouse_down(evt.button.button);
+            game->on_mouse_down(evt.button.button, evt.button.x, evt.button.y);
             break;
         case SDL_EVENT_MOUSE_BUTTON_UP:
             game->on_mouse_up(evt.button.button);
@@ -148,8 +148,8 @@ void Application::event_listening() {
     }
 }
 
-void Application::handle_key_event(const SDL_Event &evt) {
-    switch (evt.key.key) {
+void Application::handle_key_event(const SDL_KeyboardEvent &keyboard_evt) {
+    switch (keyboard_evt.key) {
     case SDLK_ESCAPE:
         running = false;
         SDL_HideWindow(window);
@@ -158,7 +158,7 @@ void Application::handle_key_event(const SDL_Event &evt) {
         game->restart();
         break;
     default:
-        game->on_keydown(evt.key.key);
+        game->on_keydown(keyboard_evt.key, keyboard_evt.mod);
     }
 }
 

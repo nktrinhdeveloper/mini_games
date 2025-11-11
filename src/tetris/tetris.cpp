@@ -496,7 +496,7 @@ void TetrisG::restart() {
     set_tetro_default(next_tetro);
 }
 
-void TetrisG::on_keydown(const SDL_Keycode &code) {
+void TetrisG::on_keydown(const SDL_Keycode &code, const SDL_Keymod &mod) {
     switch (code){
     case SDLK_LEFT:
         if (!curr_tetro.horz_off)

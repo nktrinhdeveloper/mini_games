@@ -91,9 +91,9 @@ public:
     virtual void update() {}
     virtual void render(SDL_Renderer *renderer) {}
     virtual void restart() {}
-    virtual void on_keydown(const SDL_Keycode &code) {}
+    virtual void on_keydown(const SDL_Keycode &code, const SDL_Keymod &mod) {}
     virtual void on_mouse_motion(const int &mousex, const int &mousey) {}
-    virtual void on_mouse_down(const int &mouse) {}
+    virtual void on_mouse_down(const int &mouse, const int &mousex, const int &mousey) {}
     virtual void on_mouse_up(const int &mouse) {}
 };
 

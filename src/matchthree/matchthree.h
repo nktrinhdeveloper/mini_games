@@ -23,9 +23,9 @@ public:
     void update() override;
     void render(SDL_Renderer *renderer) override;
     void restart() override;
-    void on_keydown(const SDL_Keycode &code) override;
+    void on_keydown(const SDL_Keycode &code, const SDL_Keymod &mod) override;
     void on_mouse_motion(const int &mousex, const int &mousey) override;
-    void on_mouse_down(const int &mouse) override;
+    void on_mouse_down(const int &mouse, const int &mousex, const int &mousey) override;
     void on_mouse_up(const int &mouse) override;
 private:
     enum GState {
@@ -38,8 +38,7 @@ private:
     };
     Vector2D<Polygon> items;
     std::vector<std::pair<int, int>> matches;
-    std::pair<int, int>   selected;
-    std::pair<int, int>   targeted;
+    std::pair<int, int>   hovering;
     SDL_Point   direction;
     float       offs;
     bool        mouse_selected;
@@ -49,6 +48,7 @@ private:
     bool check_match();
     void remove_matches();
     bool filling_removed_matches();
+    bool key_ctrl_swap(const SDL_Keymod &mod, const SDL_Point &direction);
 };
 
 #endif

@@ -241,7 +241,7 @@ void MergeTileG::render(SDL_Renderer *renderer) {
 
 void MergeTileG::restart() {}
 
-void MergeTileG::on_keydown(const SDL_Keycode &code) {
+void MergeTileG::on_keydown(const SDL_Keycode &code, const SDL_Keymod &mod) {
     if (direction.x || direction.y)
         return;
     

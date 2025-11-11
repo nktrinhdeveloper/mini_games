@@ -11,7 +11,7 @@ class FlappyBird : public Game {
         void update() override;
         void render(SDL_Renderer *renderer) override;
         void restart() override;
-        void on_keydown(const SDL_Keycode &code) override;
+        void on_keydown(const SDL_Keycode &code, const SDL_Keymod &mod) override;
     private:
         static constexpr float HORZ_SPEED{0.5f};
         static constexpr float VERT_SPEED{4.f};

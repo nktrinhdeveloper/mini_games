@@ -45,7 +45,7 @@ class MineSweeperG : public Game {
         void render(SDL_Renderer *renderer) override;
         void restart() override;
         void on_mouse_motion(const int &mousex, const int &mousey) override;
-        void on_mouse_down(const int &mouse) override;
+        void on_mouse_down(const int &mouse, const int &mousex, const int &mousey) override;
 
 };
 

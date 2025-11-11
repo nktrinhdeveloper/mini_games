@@ -146,7 +146,7 @@ static void set_btn_display_text(Button &btn, const bool &end = false) {
         TTF_SetTextColorFloat(btn.text.text_obj, ColorRGB::BLACK.r, ColorRGB::BLACK.g, ColorRGB::BLACK.b, ColorRGB::BLACK.a);
 }
 
-void MineSweeperG::on_mouse_down(const int &mouse_button) {
+void MineSweeperG::on_mouse_down(const int &mouse_button, const int &mousex, const int &mousey) {
     if (hover_btn.y < 0 && hover_btn.x < 0) {
         return;
     }
