@@ -37,15 +37,17 @@ private:
         FILLING     = 1 << 5,
     };
     Vector2D<Polygon> items;
+    // std::pair<int, int> check_list[2];
+    std::vector<std::pair<int, int>> check_list;
     std::vector<std::pair<int, int>> matches;
-    std::pair<int, int>   hovering;
+    std::pair<int, int> hovering;
     SDL_Point   direction;
     float       offs;
     bool        mouse_selected;
     int         state;
 
     void swap_select_items();
-    bool check_match();
+    void check_match();
     void remove_matches();
     bool filling_removed_matches();
     bool key_ctrl_swap(const SDL_Keymod &mod, const SDL_Point &direction);
