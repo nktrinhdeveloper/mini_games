@@ -46,21 +46,22 @@ void Polygon::create_regular_polygon(const int &segments, const SDL_FPoint &cent
     }
 }
 
-void Polygon::create_irregular_polygon(const SDL_FRect &dst, const SDL_FColor &color, const Vector2D<int> &pattern) {
+void Polygon::create_irregular_polygon(const SDL_FRect &dst, const SDL_FColor &color, const Vector2D<int> &pattern, const SDL_Point &center_point) {
     if (pattern.empty())
         return;
 
     float grid_w, grid_h;
     grid_h = dst.h / pattern.size();
     grid_w = dst.w / pattern[0].size();
-    int index = 0;
+    int index = 1;
+    indices.push_back(0);
     for (int r = 0; r < pattern.size(); r++) {
         for (int q = 0; q < pattern[r].size(); q++) {
             if (!pattern[r][q])
                 continue;
-
             if (index > 2)
-                indices.insert(indices.end(), {index - 2, index - 1});
+                indices.insert(indices.end(), {0, index - 1});
+
             indices.push_back(index++);
             SDL_Vertex *vert = &vertices.emplace_back();
             vert->position.x = dst.x + (grid_w / 2) + (grid_w * q);
@@ -68,6 +69,17 @@ void Polygon::create_irregular_polygon(const SDL_FRect &dst, const SDL_FColor &c
             vert->color = color;
         }
     }
+    indices.insert(indices.end(), {0, index - 1, 1});
+    SDL_Vertex center;
+    center.position.x = dst.x + (grid_w / 2) + (grid_w * center_point.x);
+    center.position.y = dst.y + (grid_h / 2) + (grid_h * center_point.y);
+    center.color = color;
+    std::sort(vertices.begin(), vertices.end(), [center_pos=&center.position](const SDL_Vertex &vert1, const SDL_Vertex &vert2){
+        float omega1 = SDL_atan2f(center_pos->y - vert1.position.y, center_pos->x - vert1.position.x);
+        float omega2 = SDL_atan2f(center_pos->y - vert2.position.y, center_pos->x - vert2.position.x);
+        return omega1 < omega2;
+    });
+    vertices.insert(vertices.begin(), center);    
 }
 
 void Polygon::reset_default() {

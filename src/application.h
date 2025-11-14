@@ -1,11 +1,11 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "snake/snake.h"
-#include "minesweeper/minesweeper.h"
-#include "tetris/tetris.h"
-#include "flappybird/flappybird.h"
-#include "g2048/game2048.h"
+// #include "snake/snake.h"
+// #include "minesweeper/minesweeper.h"
+// #include "tetris/tetris.h"
+// #include "flappybird/flappybird.h"
+// #include "g2048/game2048.h"
 #include "matchthree/matchthree.h"
 
 typedef enum MiniGame {

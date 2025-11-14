@@ -44,7 +44,7 @@ typedef struct Polygon {
     std::vector<int>        indices;
     void reset_default();
     void create_regular_polygon(const int &segments, const SDL_FPoint &center, const float &radius, const SDL_FColor &color, const float &roate_angle);
-    void create_irregular_polygon(const SDL_FRect &dst, const SDL_FColor &color, const Vector2D<int> &pattern);
+    void create_irregular_polygon(const SDL_FRect &dst, const SDL_FColor &color, const Vector2D<int> &pattern, const SDL_Point &center_point);
 } Polygon;
 
 typedef enum Tribool {

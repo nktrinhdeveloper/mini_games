@@ -1,6 +1,66 @@
 #include "matchthree.h"
 
 namespace {
+    Vector2D<int> get_special_shape_pattern(const int &shape, SDL_Point *center_point) {
+        switch (shape) {
+        case Match3G::DIAMOND:
+            if (center_point) {
+                center_point->x = 2;
+                center_point->y = 2;
+            }
+            return {
+                {0, 1, 0, 1, 0},
+                {1, 0, 0, 0, 1},
+                {0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0},
+                {0, 0, 1, 0, 0}
+            };
+        case Match3G::BOMB:
+            if (center_point) {
+                center_point->x = 3;
+                center_point->y = 3;
+            }
+            return {
+                {0, 0, 0, 1, 0, 0, 0},
+                {0, 1, 1, 0, 1, 1, 0},
+                {0, 1, 0, 0, 0, 1, 0},
+                {1, 0, 0, 0, 0, 0, 1},
+                {0, 1, 0, 0, 0, 1, 0},
+                {0, 1, 1, 0, 1, 1, 0},
+                {0, 0, 0, 1, 0, 0, 0},
+            };
+        case Match3G::PLANE:
+            if (center_point) {
+                center_point->x = 2;
+                center_point->y = 1;
+            }
+            return {
+                {0, 0, 0, 1, 0, 0, 0},
+                {1, 0, 0, 0, 0, 0, 1},
+                {0, 0, 1, 0, 1, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 1, 0, 0, 0},
+            };
+        case Match3G::STAR:
+            if (center_point) {
+                center_point->x = 3;
+                center_point->y = 3;
+            }
+            return {
+                {0, 0, 0, 1, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0},
+                {1, 0, 1, 0, 1, 0, 1},
+                {0, 0, 0, 0, 0, 0, 0},
+                {0, 1, 0, 0, 0, 1, 0},
+                {0, 0, 0, 1, 0, 0, 0},
+                {0, 1, 0, 0, 0, 1, 0},
+            };
+        }
+        return {};
+    }
+
     SDL_FColor get_color_of_shape(const int &shape) {
         SDL_FColor ret;
         switch (shape) {
@@ -25,6 +85,10 @@ namespace {
         case Match3G::DIAMOND:
             ret = ColorRGB::VIOLET;
             break;
+        case Match3G::PLANE:
+        case Match3G::STAR:
+        case Match3G::BOMB:
+            ret = ColorRGB::MEDIUM_GRAY;
         }
         return ret;
 
@@ -73,35 +137,57 @@ namespace {
         int         segments        = get_regular_poly_segments(poly.shape);
         float       rotate_angle    = poly.shape == Match3G::SQUARE ? AppConst::PI / 4 : -AppConst::PI / 2;
         SDL_FPoint  center;     
-        center.x = (col * Match3G::GRID_SIZE) + Match3G::PADDING + (item_size / 2);
-        center.y = ((row - 1) * Match3G::GRID_SIZE) + Match3G::PADDING + (item_size / 2);
+        Vector2D<int> special_shape_pattern;
 
-        if (poly.shape != Match3G::DIAMOND) {
+        if (poly.shape < Match3G::DIAMOND) {
+            center.x = (col * Match3G::GRID_SIZE) + Match3G::PADDING + (item_size / 2);
+            center.y = ((row - 1) * Match3G::GRID_SIZE) + Match3G::PADDING + (item_size / 2);
             poly.create_regular_polygon(segments, center, radius, color, rotate_angle);
         } else {
-            poly.create_irregular_polygon(SDL_FRect{center.x - (item_size / 2),
-                                                    center.y - (item_size / 2),
+            special_shape_pattern =  get_special_shape_pattern(poly.shape, (SDL_Point*)(&center));
+            poly.create_irregular_polygon(SDL_FRect{(float)(col * Match3G::GRID_SIZE) + Match3G::PADDING,
+                                                    (float)((row - 1) * Match3G::GRID_SIZE) + Match3G::PADDING,
                                                     item_size, item_size},
-                                                    color,
-                                                    Vector2D<int>{{0, 1, 0, 1, 0},
-                                                                  {1, 0, 0, 0, 1},
-                                                                  {0, 0, 0, 0, 0},
-                                                                  {0, 0, 0, 0, 0},
-                                                                  {0, 0, 1, 0, 0}});   
+                                                    color, special_shape_pattern, (SDL_Point&)(center));
         }
     }
 
-    void add_item_to_check_list(std::vector<std::pair<int, int>> &check_list, const std::pair<int, int> &pair) {
+    void create_item(Polygon &poly, const int &row, const int &col, const int &shape) {    
+        poly.shape = shape;
+        float       item_size       = Match3G::GRID_SIZE - Match3G::PADDING;
+        float       radius          = item_size / 2;
+        SDL_FColor  color           = get_color_of_shape(poly.shape);
+        int         segments        = get_regular_poly_segments(poly.shape);
+        float       rotate_angle    = poly.shape == Match3G::SQUARE ? AppConst::PI / 4 : -AppConst::PI / 2;
+        SDL_FPoint  center;     
+        Vector2D<int> special_shape_pattern;
+
+        if (poly.shape < Match3G::DIAMOND) {
+            center.x = (col * Match3G::GRID_SIZE) + Match3G::PADDING + (item_size / 2);
+            center.y = ((row - 1) * Match3G::GRID_SIZE) + Match3G::PADDING + (item_size / 2);
+            poly.create_regular_polygon(segments, center, radius, color, rotate_angle);
+        } else {
+            special_shape_pattern =  get_special_shape_pattern(poly.shape, (SDL_Point*)(&center));
+            poly.create_irregular_polygon(SDL_FRect{(float)(col * Match3G::GRID_SIZE) + Match3G::PADDING,
+                                                    (float)((row - 1) * Match3G::GRID_SIZE) + Match3G::PADDING,
+                                                    item_size, item_size},
+                                                    color, special_shape_pattern, (SDL_Point&)(center));
+        }
+    
+    }
+
+    bool add_item_to_check_list(std::vector<std::pair<int, int>> &check_list, const std::pair<int, int> &pair) {
         for (int i = 0; i < check_list.size(); i++) {
             if (check_list[i].second == pair.second && check_list[i].first >= pair.first)
-                return;
+                return false;
             if (check_list[i].second == pair.second && check_list[i].first < pair.first) {
                 check_list[i].first = pair.first;
-                return;
+                return true;
             }
         }
 
         check_list.push_back(pair);
+        return true;
     }
 
     void get_neighbor_on_horz(std::vector<std::pair<int, int>> &neighbor_row, std::pair<int, int> *track_pos,
@@ -187,6 +273,8 @@ namespace {
 
         if (match) {
             Match3G::Matcher *matcher = &matchers.emplace_back();
+            matcher->shape = Match3G::MatchShape::O_SHAPE;
+            matcher->check_pos = neighbor[track_pos.first][track_pos.second];
             for (std::vector<std::pair<int, int>> &row : neighbor) {
                 for (std::pair<int, int> &col : row) {
                     items[col.first][col.second] = 0;
@@ -203,6 +291,8 @@ namespace {
 
         std::pair<int, int> *selected = &neighbor[track_pos.first][track_pos.second];
         Match3G::Matcher *matcher = &matchers.emplace_back();
+        matcher->shape = Match3G::MatchShape::I_SHAPE_VERT;
+        matcher->check_pos = neighbor[track_pos.first][track_pos.second];
         for (std::vector<std::pair<int, int>> &row : neighbor) {
             for (std::pair<int, int> &col : row) {
                 if (col.second != selected->second)
@@ -220,6 +310,8 @@ namespace {
             return false;
 
         Match3G::Matcher *matcher = &matchers.emplace_back();
+        matcher->shape = Match3G::MatchShape::I_SHAPE_HORZ;
+        matcher->check_pos = neighbor[track_pos.first][track_pos.second];
         matcher->matches.swap(neighbor[track_pos.first]);
         for (const std::pair<int, int> &match : matcher->matches) {
             items[match.first][match.second] = 0;
@@ -232,6 +324,8 @@ namespace {
             return false;
 
         Match3G::Matcher *matcher = &matchers.emplace_back();
+        matcher->shape = Match3G::MatchShape::T_SHAPE;
+        matcher->check_pos = neighbor[track_pos.first][track_pos.second];
         for (int r = 0; r < neighbor.size(); r++) {
             for (int q = 0; q < neighbor[r].size(); q++) {
                 if (r != track_pos.first &&
@@ -320,33 +414,27 @@ namespace {
 
 static void create_grid_for_test(Vector2D<Polygon> &items) {
     Polygon q, w, e, r;
-    e.shape = Match3G::TRIANGLE;
-    q.shape = Match3G::CIRCLE;
+    e.shape = 0;
+    q.shape = Match3G::TRIANGLE;
     w.shape = Match3G::SQUARE;
     r.shape = Match3G::ROTATED_SQUARE;
     items = {
     //   0  1  2  3  4  5  6  7  
-        {e, e, e, e, r, e, e, e}, // 0
-        {e, e, e, e, w, e, e, e}, // 1
-        {e, r, r, r, q, r, r, e}, // 2
-        {e, r, w, w, w, q, r, e}, // 3
-        {e, e, q, q, q, w, e, e}, // 4
-        {e, e, e, e, e, e, e, e}, // 5
-        {e, e, e, e, e, e, e, e}, // 6
-        {e, e, e, e, e, e, e, e}, // 7
+        {e, e, e, e, e, e, e, e}, // 0
+        {e, e, e, w, r, e, e, e}, // 1
+        {e, e, e, e, q, e, e, e}, // 2
+        {e, e, e, e, q, e, e, e}, // 3
+        {e, e, e, q, r, e, e, e}, // 4
+        {e, e, e, w, q, e, e, e}, // 5
+        {e, e, e, e, q, e, e, e}, // 6
+        {e, e, e, e, w, e, e, e}, // 7
         {e, e, e, e, e, e, e, e}, // 8
     };
     for (int r = 0; r < items.size(); r++) {
         for (int q = 0; q < items[r].size(); q++) {
-            float       item_size       = Match3G::GRID_SIZE - Match3G::PADDING;
-            float       radius          = item_size / 2;
-            SDL_FColor  color           = get_color_of_shape(items[r][q].shape);
-            int         segments        = get_regular_poly_segments(items[r][q].shape);
-            float       rotate_angle    = items[r][q].shape == Match3G::SQUARE ? AppConst::PI / 4 : -AppConst::PI / 2;
-            SDL_FPoint  center;     
-            center.x = (q * Match3G::GRID_SIZE) + Match3G::PADDING + (item_size / 2);
-            center.y = ((r - 1) * Match3G::GRID_SIZE) + Match3G::PADDING + (item_size / 2);
-            items[r][q].create_regular_polygon(segments, center, radius, color, rotate_angle);
+            if (!items[r][q].shape)
+                continue;
+            create_item(items[r][q], r, q, items[r][q].shape);
         }
     }
     
@@ -426,7 +514,6 @@ void Match3G::check_match() {
     if (!on_check_match(check_list, items_grid, matchers, re_check)) {
         if (!direction.x && !direction.y) {
             state = NONE_STATE;
-            matchers.clear();
             check_list.erase(check_list.begin() + 2, check_list.end());
             check_list[0] = {-1, -1};
             check_list[1] = {-1, -1};
@@ -452,6 +539,20 @@ void Match3G::remove_matches(const std::vector<Matcher> &matchers) {
             items[match.first][match.second].reset_default();
             add_item_to_check_list(check_list, match);
         }
+    
+        switch (matcher.shape){
+        case O_SHAPE:
+            create_item(items[matcher.check_pos.first][matcher.check_pos.second], matcher.check_pos.first, matcher.check_pos.second, PLANE);
+            break;
+        case T_SHAPE:
+            create_item(items[matcher.check_pos.first][matcher.check_pos.second], matcher.check_pos.first, matcher.check_pos.second, BOMB);
+            break;
+        case I_SHAPE_HORZ:
+        case I_SHAPE_VERT:
+            if (matcher.matches.size() >= 5)
+                create_item(items[matcher.check_pos.first][matcher.check_pos.second], matcher.check_pos.first, matcher.check_pos.second, STAR);
+            break;        
+        }
     }
 }
 
@@ -460,22 +561,28 @@ bool Match3G::filling_removed_matches() {
     offs -= SPEED;
     int ret = 1;
     for (const std::pair<int, int> &match : check_list){
-        if (!items[match.first][match.second].shape) {
+        if (items[match.first][match.second].shape && items[match.first - 1][match.second].shape) {
+            continue;
+        } else if (!items[match.first][match.second].shape || (items[match.first][match.second].shape && !items[match.first - 1][match.second].shape)) {
             for (int r = match.first - 1; r >= 0; r--) {
                 if (!items[r][match.second].shape)
                     continue;
                 for (SDL_Vertex &vert : items[r][match.second].vertices)
                     vert.position.y += speed;
     
-                if (offs <= 0) {
-                    std::swap(items[r][match.second], items[r + 1][match.second]);
-                    if (r == 0)
-                        create_random_item(items[r][match.second], r, match.second);
-                }
+                if (offs > 0)
+                    continue;
+
+                std::swap(items[r][match.second], items[r + 1][match.second]);
+                if (r == 0)
+                    create_random_item(items[r][match.second], r, match.second);
+
             }
         }
-
-        ret *= items[match.first][match.second].shape;
+        if (items[match.first][match.second].shape > DIAMOND)
+            ret *= items[match.first - 1][match.second].shape;
+        else
+            ret *= items[match.first][match.second].shape;
     }
     return ret;
 }

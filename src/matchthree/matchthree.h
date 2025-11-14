@@ -11,7 +11,10 @@ public:
         PENTAGON,
         HEXAGON,
         CIRCLE,
-        DIAMOND
+        DIAMOND,
+        BOMB,
+        PLANE,
+        STAR
     };
     enum MatchShape {
         O_SHAPE = 1,
@@ -22,6 +25,7 @@ public:
     typedef struct Matcher {
         std::vector<std::pair<int, int>> matches;
         int shape;
+        std::pair<int, int> check_pos;
     } Matcher;
     static const int GRID_SIZE{75};
     static const int PADDING{10};
