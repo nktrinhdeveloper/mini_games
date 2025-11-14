@@ -105,7 +105,7 @@ namespace {
     }
 
     void get_neighbor_on_horz(std::vector<std::pair<int, int>> &neighbor_row, std::pair<int, int> *track_pos,
-                                const Vector2D<Polygon> &items, const std::pair<int, int> &pos) {
+                                const Vector2D<int> &items, const std::pair<int, int> &pos) {
         for (int rev = 0; rev < 2; rev++) {
             int q, limit, k;
             if (!rev) {
@@ -119,7 +119,7 @@ namespace {
             }
 
             for (; q * k < limit; q += k) {
-                if (items[pos.first][q].shape != items[pos.first][pos.second].shape)
+                if (items[pos.first][q] != items[pos.first][pos.second])
                     break;
 
                 if (!rev)
@@ -134,7 +134,7 @@ namespace {
     }
 
     void get_neighbor_on_vert(Vector2D<std::pair<int, int>> &neighbor, std::pair<int, int> &track_pos,
-                                const Vector2D<Polygon> &items, const std::pair<int, int> &pos) {
+                                const Vector2D<int> &items, const std::pair<int, int> &pos) {
         get_neighbor_on_horz(neighbor[0], &track_pos, items, pos);
         for (int rev = 0; rev < 2; rev++) {
             int r, limit, k;
@@ -149,7 +149,7 @@ namespace {
             }
 
             for (; r * k < limit; r += k) {
-                if (items[pos.first][pos.second].shape != items[r][pos.second].shape)
+                if (items[pos.first][pos.second] != items[r][pos.second])
                     break;
                 
                 if (!rev) {
@@ -164,7 +164,7 @@ namespace {
         }
     }
 
-    bool is_match_O_shape(const std::pair<int, int> &track_pos, Vector2D<std::pair<int, int>> &neighbor, std::vector<std::pair<int, int>> &matches) {
+    bool is_match_O_shape(const std::pair<int, int> &track_pos, Vector2D<std::pair<int, int>> &neighbor, Vector2D<int> &items, std::vector<Match3G::Matcher> &matchers) {
         if (neighbor.size() < 2 || neighbor[track_pos.first].size() < 2)
             return false;
         
@@ -186,65 +186,75 @@ namespace {
         }
 
         if (match) {
+            Match3G::Matcher *matcher = &matchers.emplace_back();
             for (std::vector<std::pair<int, int>> &row : neighbor) {
                 for (std::pair<int, int> &col : row) {
-                    matches.push_back(std::move(col));
+                    items[col.first][col.second] = 0;
+                    matcher->matches.push_back(col);
                 } 
             }
         }
         return match;
     }
         
-    bool is_match_vert_I_shape(const std::pair<int, int> &track_pos, Vector2D<std::pair<int, int>> &neighbor, std::vector<std::pair<int, int>> &matches) {
+    bool is_match_vert_I_shape(const std::pair<int, int> &track_pos, Vector2D<std::pair<int, int>> &neighbor, Vector2D<int> &items, std::vector<Match3G::Matcher> &matchers) {
         if (neighbor.size() < 3)
             return false;
 
         std::pair<int, int> *selected = &neighbor[track_pos.first][track_pos.second];
+        Match3G::Matcher *matcher = &matchers.emplace_back();
         for (std::vector<std::pair<int, int>> &row : neighbor) {
             for (std::pair<int, int> &col : row) {
                 if (col.second != selected->second)
                     continue;
 
-                matches.push_back(std::move(col));
+                matcher->matches.push_back(col);
+                items[col.first][col.second] = 0;
             }
         }
         return true;
     }
         
-    bool is_match_horz_I_shape(const std::pair<int, int> &track_pos, Vector2D<std::pair<int, int>> &neighbor, std::vector<std::pair<int, int>> &matches) {
+    bool is_match_horz_I_shape(const std::pair<int, int> &track_pos, Vector2D<std::pair<int, int>> &neighbor, Vector2D<int> &items, std::vector<Match3G::Matcher> &matchers) {
         if (neighbor[track_pos.first].size() < 3)
             return false;
 
-        matches.swap(neighbor[track_pos.first]);
+        Match3G::Matcher *matcher = &matchers.emplace_back();
+        matcher->matches.swap(neighbor[track_pos.first]);
+        for (const std::pair<int, int> &match : matcher->matches) {
+            items[match.first][match.second] = 0;
+        }
         return true;
     }
         
-    bool is_match_T_shape(const std::pair<int, int> &track_pos, Vector2D<std::pair<int, int>> &neighbor, std::vector<std::pair<int, int>> &matches) {
+    bool is_match_T_shape(const std::pair<int, int> &track_pos, Vector2D<std::pair<int, int>> &neighbor, Vector2D<int> &items, std::vector<Match3G::Matcher> &matchers) {
         if (neighbor.size() < 3 || neighbor[track_pos.first].size() < 3)
             return false;
 
+        Match3G::Matcher *matcher = &matchers.emplace_back();
         for (int r = 0; r < neighbor.size(); r++) {
             for (int q = 0; q < neighbor[r].size(); q++) {
                 if (r != track_pos.first &&
                 (neighbor[r][q].second < neighbor[track_pos.first][track_pos.second].second || neighbor[r][q].second > neighbor[track_pos.first][track_pos.second].second))
                     continue;
-                matches.push_back(std::move(neighbor[r][q]));
+                matcher->matches.push_back(neighbor[r][q]);
+                items[neighbor[r][q].first][neighbor[r][q].second] = 0;
             }
         }
         return true;
     }
     
-    bool check_match_pattern(std::vector<std::pair<int, int>> &matches, const Vector2D<Polygon> &items, const std::pair<int, int> &pos) {
+    bool check_match_pattern(std::vector<Match3G::Matcher> &matchers, Vector2D<int> &items, const std::pair<int, int> &pos) {
         Vector2D<std::pair<int, int>> neighbor = {{pos}};
         std::pair<int, int> track_pos = {0, 0};
         get_neighbor_on_vert(neighbor, track_pos, items, pos);
-        if (is_match_T_shape(track_pos, neighbor, matches))
+        if (is_match_T_shape(track_pos, neighbor, items, matchers))
             return true;
-        else if (is_match_O_shape(track_pos, neighbor, matches))
+        else if (is_match_O_shape(track_pos, neighbor, items, matchers))
             return true;
-        if (is_match_vert_I_shape(track_pos, neighbor, matches))
+        if (is_match_vert_I_shape(track_pos, neighbor, items, matchers))
             return true;
-        if (is_match_horz_I_shape(track_pos, neighbor, matches))
+        if (is_match_horz_I_shape(track_pos, neighbor, items, matchers))
             return true;
         return false;
     }
@@ -271,8 +281,18 @@ namespace {
             hovering = {1, 0};
     }
 
-    bool on_check_match(std::vector<std::pair<int, int>> &check_list, const Vector2D<Polygon> &items,
-                        std::vector<std::pair<int, int>> &matches, const bool &recheck = false) {
+    Vector2D<int> get_2d_shape_grid(const Vector2D<Polygon> &items) {
+        Vector2D<int> ret(items.size(), std::vector<int>(items[0].size()));
+        for (int r = 0; r < items.size(); r++) {
+            for (int q = 0; q < items[r].size(); q++) {
+                ret[r][q] = items[r][q].shape;
+            }
+        }
+        return ret;
+    }
+
+    bool on_check_match(std::vector<std::pair<int, int>> &check_list, Vector2D<int> &items,
+                        std::vector<Match3G::Matcher> &matchers, const bool &recheck = false) {
 
         bool done_checking = false;
         while (!done_checking) {
@@ -283,8 +303,8 @@ namespace {
                     continue;
                 }
 
-                if (check_match_pattern(matches, items, pair))
-                    return true;
+                if (items[pair.first][pair.second])
+                    check_match_pattern(matchers, items, pair);
 
                 if (!recheck) {
                     done_checking = true;
@@ -294,22 +314,24 @@ namespace {
                 }
             }
         }
-        return false;
+        return !matchers.empty();
     }
 }
 
 static void create_grid_for_test(Vector2D<Polygon> &items) {
-    Polygon p, e;
+    Polygon q, w, e, r;
     e.shape = Match3G::TRIANGLE;
-    p.shape = Match3G::CIRCLE;
+    q.shape = Match3G::CIRCLE;
+    w.shape = Match3G::SQUARE;
+    r.shape = Match3G::ROTATED_SQUARE;
     items = {
     //   0  1  2  3  4  5  6  7  
-        {e, e, e, e, e, e, e, e}, // 0
-        {e, e, e, p, e, e, e, e}, // 1
-        {e, e, e, p, e, e, e, e}, // 2
-        {e, e, e, p, e, e, e, e}, // 3
-        {e, e, p, p, p, p, e, e}, // 4
-        {e, e, e, e, e, p, p, e}, // 5
+        {e, e, e, e, r, e, e, e}, // 0
+        {e, e, e, e, w, e, e, e}, // 1
+        {e, r, r, r, q, r, r, e}, // 2
+        {e, r, w, w, w, q, r, e}, // 3
+        {e, e, q, q, q, w, e, e}, // 4
+        {e, e, e, e, e, e, e, e}, // 5
         {e, e, e, e, e, e, e, e}, // 6
         {e, e, e, e, e, e, e, e}, // 7
         {e, e, e, e, e, e, e, e}, // 8
@@ -359,7 +381,6 @@ void Match3G::update() {
     if (state & FILLING) {
         if (filling_removed_matches()) {
             state = MATCHING;
-            matches.clear();
         } else if (offs <= 0)
             offs = GRID_SIZE;
     }
@@ -399,12 +420,13 @@ void Match3G::swap_select_items() {
 }
 
 void Match3G::check_match() {
-    // printf("re-matching:[%d][%d], [%d][%d]\n", check_list[0].first, check_list[0].second, check_list[1].first, check_list[1].second);
     bool re_check = (!direction.x && !direction.y);
-    if (!on_check_match(check_list, items, matches, re_check)) {
+    Vector2D<int> items_grid = get_2d_shape_grid(items);
+    std::vector<Matcher> matchers;
+    if (!on_check_match(check_list, items_grid, matchers, re_check)) {
         if (!direction.x && !direction.y) {
             state = NONE_STATE;
-            matches.clear();
+            matchers.clear();
             check_list.erase(check_list.begin() + 2, check_list.end());
             check_list[0] = {-1, -1};
             check_list[1] = {-1, -1};
@@ -420,20 +442,16 @@ void Match3G::check_match() {
         direction = {0, 0};
         check_list.clear();
         state = FILLING;
-        remove_matches();
+        remove_matches(matchers);
     }    
 }
 
-void Match3G::remove_matches() {
-    std::sort(matches.begin(), matches.end(),
-    [](const std::pair<int, int> &p1, const std::pair<int, int> &p2){
-        if (p1.first == p2.first)
-            return p1.second > p2.second;
-        return p1.first > p2.first;
-    });
-
-    for (int i = 0; i < matches.size(); i++) {
-        items[matches[i].first][matches[i].second].reset_default();
+void Match3G::remove_matches(const std::vector<Matcher> &matchers) {
+    for (const Matcher &matcher : matchers) {
+        for (const std::pair<int, int> &match : matcher.matches) {
+            items[match.first][match.second].reset_default();
+            add_item_to_check_list(check_list, match);
+        }
     }
 }
 
@@ -441,24 +459,23 @@ bool Match3G::filling_removed_matches() {
     float speed = offs - speed <= 0 ? offs : SPEED;
     offs -= SPEED;
     int ret = 1;
-    for (int i = 0; i < matches.size(); i++){
-        if (!items[matches[i].first][matches[i].second].shape && items[matches[i].first - 1][matches[i].second].shape) {
-            for (int r = matches[i].first - 1; r >= 0; r--) {
-                for (SDL_Vertex &vert : items[r][matches[i].second].vertices)
+    for (const std::pair<int, int> &match : check_list){
+        if (!items[match.first][match.second].shape) {
+            for (int r = match.first - 1; r >= 0; r--) {
+                if (!items[r][match.second].shape)
+                    continue;
+                for (SDL_Vertex &vert : items[r][match.second].vertices)
                     vert.position.y += speed;
     
                 if (offs <= 0) {
-                    std::swap(items[r][matches[i].second], items[r + 1][matches[i].second]);
+                    std::swap(items[r][match.second], items[r + 1][match.second]);
                     if (r == 0)
-                        create_random_item(items[r][matches[i].second], r, matches[i].second);
+                        create_random_item(items[r][match.second], r, match.second);
                 }
             }
         }
 
-        ret *= items[matches[i].first][matches[i].second].shape;
-        if (ret) {
-            add_item_to_check_list(check_list, matches[i]);
-        }
+        ret *= items[match.first][match.second].shape;
     }
     return ret;
 }
@@ -520,6 +537,7 @@ void Match3G::restart() {
     mouse_selected  = false;
     state           = NONE_STATE;
     hovering        = {-1, -1};
+    check_list.erase(check_list.begin() + 2, check_list.end());
     check_list[0]      = {-1, -1};
     check_list[1]      = {-1, -1};
 }
