@@ -31,6 +31,7 @@ public:
     static const int PADDING{10};
     static const int NB_ITEMS{7};
     static constexpr float SPEED{1.F};
+    static const std::array<const SDL_FColor*, 3> RGB_COLOR;
 
     ~Match3G() override = default;
     bool init(SDL_Renderer *renderer, const std::string &running_dir) override;
@@ -60,6 +61,7 @@ private:
     bool        mouse_selected;
     int         state;
     bool        need_recheck;
+    Uint64      timer;
 
     void swap_select_items();
     void check_match();

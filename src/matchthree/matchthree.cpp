@@ -1,5 +1,7 @@
 #include "matchthree.h"
 
+const std::array<const SDL_FColor*, 3> Match3G::RGB_COLOR = {&ColorRGB::RED, &ColorRGB::GREEN, &ColorRGB::BLUE};
+
 namespace {
     Vector2D<int> get_special_shape_pattern(const int &shape, SDL_Point *center_point) {
         switch (shape) {
@@ -152,7 +154,7 @@ namespace {
         }
     }
 
-    void create_item(Polygon &poly, const int &row, const int &col, const int &shape) {    
+    void create_item(Polygon &poly, const int &row, const int &col, const int &shape) {
         poly.shape = shape;
         float       item_size       = Match3G::GRID_SIZE - Match3G::PADDING;
         float       radius          = item_size / 2;
@@ -172,6 +174,16 @@ namespace {
                                                     (float)((row - 1) * Match3G::GRID_SIZE) + Match3G::PADDING,
                                                     item_size, item_size},
                                                     color, special_shape_pattern, (SDL_Point&)(center));
+            if (poly.shape <= Match3G::DIAMOND)
+                return;
+
+            poly.vertices[0].color = ColorRGB::WHITE;
+            int color_idx = 0;
+            for (int i = 1; i < poly.vertices.size(); i++) {
+                poly.vertices[i].color = *Match3G::RGB_COLOR[color_idx++];
+                if (color_idx >= Match3G::RGB_COLOR.size())
+                    color_idx = 0;
+            }
         }
     
     }
@@ -508,6 +520,7 @@ namespace {
             }
         }
     }
+
 }
 
 static void create_grid_for_test(Vector2D<Polygon> &items) {
@@ -545,6 +558,7 @@ bool Match3G::init(SDL_Renderer *renderer, const std::string &running_dir) {
     for (int r = 0; r < items.size(); r++) {
         for (int q = 0; q < items[r].size(); q++) {
             create_random_item(items[r][q], r, q);
+            check_list.emplace_back(r, q);
         }
     }
     // create_grid_for_test(items);
@@ -552,14 +566,16 @@ bool Match3G::init(SDL_Renderer *renderer, const std::string &running_dir) {
     hovering = {-1, -1};
     direction = {0, 0};
     offs = 0;
-    state = NONE_STATE;
-    check_list.resize(2);
-    check_list[0] = {-1, -1};
-    check_list[1] = {-1, -1};
+    state = MATCHING;
+    timer = 0;
     return true;
 }
 
 void Match3G::update() {
+    if (timer < 1000) {
+        timer += clock->get_tpf();
+        return;
+    }
     if (state & SWAPPING || state & REVERTING)
         swap_select_items();
     
@@ -741,22 +757,21 @@ void Match3G::render(SDL_Renderer *renderer) {
 }
 
 void Match3G::restart() {
-    create_grid_for_test(items);
-    // items.clear();
-    // items = Vector2D<Polygon>(9, std::vector<Polygon>(8));
-    // for (int r = 0; r < items.size(); r++) {
-    //     for (int q = 0; q < items[r].size(); q++) {
-    //         create_random_item(items[r][q], r, q);
-    //     }
-    // }
+    // create_grid_for_test(items);
+    items.clear();
+    items = Vector2D<Polygon>(9, std::vector<Polygon>(8));
+    for (int r = 0; r < items.size(); r++) {
+        for (int q = 0; q < items[r].size(); q++) {
+            create_random_item(items[r][q], r, q);
+            check_list.emplace_back(r, q);
+        }
+    }
     offs            = 0;
     direction       = {0, 0};
     mouse_selected  = false;
     state           = NONE_STATE;
     hovering        = {-1, -1};
-    check_list.erase(check_list.begin() + 2, check_list.end());
-    check_list[0]      = {-1, -1};
-    check_list[1]      = {-1, -1};
+    timer = 0;
 }
 
 void Match3G::on_keydown(const SDL_Keycode &code, const SDL_Keymod &mod) {
