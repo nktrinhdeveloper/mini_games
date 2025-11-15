@@ -277,7 +277,7 @@ namespace {
             matcher->check_pos = neighbor[track_pos.first][track_pos.second];
             for (std::vector<std::pair<int, int>> &row : neighbor) {
                 for (std::pair<int, int> &col : row) {
-                    items[col.first][col.second] = 0;
+                    items[col.first][col.second] = -1;
                     matcher->matches.push_back(col);
                 } 
             }
@@ -299,7 +299,7 @@ namespace {
                     continue;
 
                 matcher->matches.push_back(col);
-                items[col.first][col.second] = 0;
+                items[col.first][col.second] = -1;
             }
         }
         return true;
@@ -314,7 +314,7 @@ namespace {
         matcher->check_pos = neighbor[track_pos.first][track_pos.second];
         matcher->matches.swap(neighbor[track_pos.first]);
         for (const std::pair<int, int> &match : matcher->matches) {
-            items[match.first][match.second] = 0;
+            items[match.first][match.second] = -1;
         }
         return true;
     }
@@ -332,7 +332,7 @@ namespace {
                 (neighbor[r][q].second < neighbor[track_pos.first][track_pos.second].second || neighbor[r][q].second > neighbor[track_pos.first][track_pos.second].second))
                     continue;
                 matcher->matches.push_back(neighbor[r][q]);
-                items[neighbor[r][q].first][neighbor[r][q].second] = 0;
+                items[neighbor[r][q].first][neighbor[r][q].second] = -1;
             }
         }
         return true;
@@ -385,10 +385,99 @@ namespace {
         return ret;
     }
 
+    void get_explode_items(const std::pair<int, int> &pos, std::vector<Match3G::Matcher> &matchers) {
+        Match3G::Matcher *matcher = &matchers.emplace_back();
+        matcher->shape = -1;
+        for (int r = pos.first - 2; r <= pos.first + 2; r++) {
+            if (r < 1 || r >= 9)
+                continue;
+
+            for (int q = pos.second - 2; q <= pos.second + 2; q++) {
+                if (q < 0 || q >= 8)
+                    continue;
+                matcher->matches.emplace_back(r, q);
+            }
+        }
+    }
+
+    void get_shotdown_items(const std::pair<int, int> &pos, const Vector2D<int> &items, std::vector<Match3G::Matcher> &matchers) {
+        Match3G::Matcher *matcher = &matchers.emplace_back();
+        matcher->shape = -1;
+        matcher->matches.emplace_back(pos);
+        if (pos.first - 1 >= 1)
+            matcher->matches.emplace_back(pos.first - 1, pos.second);
+        if (pos.first + 1 < 9)
+            matcher->matches.emplace_back(pos.first + 1, pos.second);
+        if (pos.second - 1 >= 0)
+            matcher->matches.emplace_back(pos.first, pos.second - 1);
+        if (pos.second + 1 < 8)
+            matcher->matches.emplace_back(pos.first, pos.second + 1);
+
+        int random_shape = Match3G::PLANE;
+        int r, q;
+        while (random_shape > Match3G::DIAMOND) {
+            r = SDL_rand(8) + 1;
+            q = SDL_rand(8);
+            bool already_have = false;
+            for (const std::pair<int, int> &pair : matcher->matches) {
+                if (pair.first == r && pair.second == q) {
+                    random_shape = Match3G::DIAMOND + 1;
+                    already_have = true;
+                    break;
+                }
+            }
+            if (already_have)
+                continue;
+            random_shape = items[r][q];
+        }
+        matcher->matches.emplace_back(r, q);
+    }
+
+    void get_all_sameshape_items(const std::vector<std::pair<int, int>> &check_list, const Vector2D<int> &items, std::vector<Match3G::Matcher> &matchers) {
+        Match3G::Matcher *matcher = &matchers.emplace_back();
+        matcher->shape = -1;
+        int shape;
+        for (const std::pair<int, int> &pos : check_list) {
+            if (items[pos.first][pos.second] == Match3G::STAR)
+                matcher->matches.emplace_back(pos);
+            else
+                shape = items[pos.first][pos.second];
+        }
+
+        for (int r = 1; r < items.size(); r++) {
+            for (int q = 0; q < items[r].size(); q++) {
+                if (items[r][q] != shape)
+                    continue;
+                matcher->matches.emplace_back(r, q);
+            }
+        }
+    }
+
+    bool check_special_items(std::vector<std::pair<int, int>> &check_list, Vector2D<int> &items, std::vector<Match3G::Matcher> &matchers) {
+        for (int i = 0; i < check_list.size(); i++) {
+            switch (items[check_list[i].first][check_list[i].second]) {
+                case Match3G::BOMB:
+                    get_explode_items(check_list[i], matchers);
+                    break;
+                case Match3G::PLANE:
+                    get_shotdown_items(check_list[i], items, matchers);
+                    break;
+                case Match3G::STAR:
+                    get_all_sameshape_items(check_list, items, matchers);
+                    break;
+            }
+        }
+        return !matchers.empty();
+    }
+
     bool on_check_match(std::vector<std::pair<int, int>> &check_list, Vector2D<int> &items,
                         std::vector<Match3G::Matcher> &matchers, const bool &recheck = false) {
 
+        if (!recheck && check_special_items(check_list, items, matchers))
+            return true;
+        
         bool done_checking = false;
+        bool need_to_fill = false;
         while (!done_checking) {
             done_checking = true;
             for (std::pair<int, int> &pair : check_list) {
@@ -397,18 +486,27 @@ namespace {
                     continue;
                 }
 
-                if (items[pair.first][pair.second])
+                if (!need_to_fill && items[pair.first][pair.second] > 0 && items[pair.first][pair.second] <= Match3G::DIAMOND)
                     check_match_pattern(matchers, items, pair);
 
-                if (!recheck) {
-                    done_checking = true;
-                } else {
+                if (recheck) {
                     pair.first -= 1;
                     done_checking *= pair.first < 1;
                 }
             }
         }
         return !matchers.empty();
+    }
+
+    void get_holes_in_col(const Vector2D<Polygon> &items, std::vector<std::pair<int, int>> &dst, const std::vector<std::pair<int, int>> &checklist) {
+        for (const std::pair<int, int> &pair : checklist) {
+            for (int r = pair.first; r > 0; r--) {
+                if (!items[r][pair.second].shape) {
+                    dst.emplace_back(r, pair.second);
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -421,19 +519,21 @@ static void create_grid_for_test(Vector2D<Polygon> &items) {
     items = {
     //   0  1  2  3  4  5  6  7  
         {e, e, e, e, e, e, e, e}, // 0
-        {e, e, e, w, r, e, e, e}, // 1
+        {e, e, e, e, q, e, e, e}, // 1
         {e, e, e, e, q, e, e, e}, // 2
-        {e, e, e, e, q, e, e, e}, // 3
-        {e, e, e, q, r, e, e, e}, // 4
-        {e, e, e, w, q, e, e, e}, // 5
-        {e, e, e, e, q, e, e, e}, // 6
-        {e, e, e, e, w, e, e, e}, // 7
+        {e, e, e, e, r, q, e, e}, // 3
+        {e, e, e, e, q, e, e, e}, // 4
+        {e, e, e, e, q, e, e, e}, // 5
+        {e, e, e, e, e, e, e, e}, // 6
+        {e, e, e, e, e, e, e, e}, // 7
         {e, e, e, e, e, e, e, e}, // 8
     };
     for (int r = 0; r < items.size(); r++) {
         for (int q = 0; q < items[r].size(); q++) {
-            if (!items[r][q].shape)
+            if (!items[r][q].shape) {
+                create_random_item(items[r][q], r, q);
                 continue;
+            }
             create_item(items[r][q], r, q, items[r][q].shape);
         }
     }
@@ -467,10 +567,14 @@ void Match3G::update() {
         check_match();
 
     if (state & FILLING) {
-        if (filling_removed_matches()) {
-            state = MATCHING;
-        } else if (offs <= 0)
+        std::vector<std::pair<int, int>> check_for_holes;
+        filling_removed_matches(check_for_holes);
+        if (offs <= 0)
             offs = GRID_SIZE;
+
+        get_holes_in_col(items, fill_list, check_for_holes);
+        if (fill_list.empty())
+            state = MATCHING;
     }
 }
 
@@ -551,40 +655,46 @@ void Match3G::remove_matches(const std::vector<Matcher> &matchers) {
         case I_SHAPE_VERT:
             if (matcher.matches.size() >= 5)
                 create_item(items[matcher.check_pos.first][matcher.check_pos.second], matcher.check_pos.first, matcher.check_pos.second, STAR);
-            break;        
+            break;
         }
+    }
+    for (int i = 0; i < check_list.size(); i++) {
+        if (items[check_list[i].first][check_list[i].second].shape)
+            get_holes_in_col(items, fill_list, {{check_list[i]}});
+        else
+            fill_list.push_back(check_list[i]);
     }
 }
 
-bool Match3G::filling_removed_matches() {
+bool Match3G::filling_removed_matches(std::vector<std::pair<int, int>> &check_for_holes) {
     float speed = offs - speed <= 0 ? offs : SPEED;
     offs -= SPEED;
     int ret = 1;
-    for (const std::pair<int, int> &match : check_list){
-        if (items[match.first][match.second].shape && items[match.first - 1][match.second].shape) {
-            continue;
-        } else if (!items[match.first][match.second].shape || (items[match.first][match.second].shape && !items[match.first - 1][match.second].shape)) {
-            for (int r = match.first - 1; r >= 0; r--) {
-                if (!items[r][match.second].shape)
+
+    for (std::vector<std::pair<int, int>>::iterator pair = fill_list.begin(); pair != fill_list.end();){
+        if (!items[pair->first][pair->second].shape) {
+            for (int r = pair->first - 1; r >= 0; r--) {
+                if (!items[r][pair->second].shape)
                     continue;
-                for (SDL_Vertex &vert : items[r][match.second].vertices)
+                for (SDL_Vertex &vert : items[r][pair->second].vertices)
                     vert.position.y += speed;
     
                 if (offs > 0)
                     continue;
 
-                std::swap(items[r][match.second], items[r + 1][match.second]);
+                std::swap(items[r][pair->second], items[r + 1][pair->second]);
                 if (r == 0)
-                    create_random_item(items[r][match.second], r, match.second);
+                    create_random_item(items[r][pair->second], r, pair->second);
 
             }
         }
-        if (items[match.first][match.second].shape > DIAMOND)
-            ret *= items[match.first - 1][match.second].shape;
-        else
-            ret *= items[match.first][match.second].shape;
+        if (items[pair->first][pair->second].shape) {
+            check_for_holes.emplace_back(pair->first, pair->second);
+            fill_list.erase(pair);
+        }else
+            pair++;
     }
-    return ret;
+    return fill_list.empty();
 }
 
 void Match3G::render(SDL_Renderer *renderer) {
@@ -631,14 +741,14 @@ void Match3G::render(SDL_Renderer *renderer) {
 }
 
 void Match3G::restart() {
-    // create_grid_for_test(items);
-    items.clear();
-    items = Vector2D<Polygon>(9, std::vector<Polygon>(8));
-    for (int r = 0; r < items.size(); r++) {
-        for (int q = 0; q < items[r].size(); q++) {
-            create_random_item(items[r][q], r, q);
-        }
-    }
+    create_grid_for_test(items);
+    // items.clear();
+    // items = Vector2D<Polygon>(9, std::vector<Polygon>(8));
+    // for (int r = 0; r < items.size(); r++) {
+    //     for (int q = 0; q < items[r].size(); q++) {
+    //         create_random_item(items[r][q], r, q);
+    //     }
+    // }
     offs            = 0;
     direction       = {0, 0};
     mouse_selected  = false;
@@ -687,6 +797,9 @@ void Match3G::on_keydown(const SDL_Keycode &code, const SDL_Keymod &mod) {
 
 bool Match3G::key_ctrl_swap(const SDL_Keymod &mod, const SDL_Point &direction) {
     if (mod & SDL_KMOD_CTRL) {
+        if (hovering.first + direction.y < 1 || hovering.first + direction.y >= items.size() ||
+        hovering.second + direction.x < 0 || hovering.second + direction.x >= items[0].size())
+            return false;
         this->state = SWAPPING;
         this->offs = GRID_SIZE;
         this->direction = direction;

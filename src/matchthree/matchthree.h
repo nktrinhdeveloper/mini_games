@@ -53,16 +53,18 @@ private:
     Vector2D<Polygon> items;
     // std::pair<int, int> check_list[2];
     std::vector<std::pair<int, int>> check_list;
+    std::vector<std::pair<int, int>> fill_list;
     std::pair<int, int> hovering;
     SDL_Point   direction;
     float       offs;
     bool        mouse_selected;
     int         state;
+    bool        need_recheck;
 
     void swap_select_items();
     void check_match();
     void remove_matches(const std::vector<Matcher> &matchers);
-    bool filling_removed_matches();
+    bool filling_removed_matches(std::vector<std::pair<int, int>> &check_for_holes);
     bool key_ctrl_swap(const SDL_Keymod &mod, const SDL_Point &direction);
 };
 
